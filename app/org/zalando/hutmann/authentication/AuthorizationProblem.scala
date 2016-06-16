@@ -1,0 +1,6 @@
+package org.zalando.hutmann.authentication
+
+sealed trait AuthorizationProblem extends OAuth2Error
+case class InsufficientPermissions(app2AppUser: User) extends AuthorizationProblem
+case object NoAuthorization extends AuthorizationProblem
+case object AuthorizationTimeout extends AuthorizationProblem

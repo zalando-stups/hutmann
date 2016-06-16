@@ -1,0 +1,13 @@
+.directory
+.history
+.idea/
+.sbtserver/
+logs/
+project/.sbtserver
+project/.sbtserver.lock
+project/play-fork-run.sbt
+project/project/
+project/sbt-ui.sbt
+project/target/
+target/
+.DS_Store
