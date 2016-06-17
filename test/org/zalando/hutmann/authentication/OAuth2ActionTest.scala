@@ -5,17 +5,17 @@ import java.util.{ Base64, UUID }
 import com.typesafe.config.ConfigFactory
 import org.scalacheck.{ Gen, Shrink }
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.zalando.hutmann.UnitSpec
-import org.zalando.hutmann.authentication._
 import org.zalando.hutmann.logging.Context
+import org.zalando.hutmann.spec.UnitSpec
 import play.api.test.FakeRequest
 
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ ExecutionContext, Future }
 
 class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks {
   def oauth2 = new OAuth2Action()(ConfigFactory.parseString(
     "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-  ))
+  ), implicitly[ExecutionContext])
 
   //token can either ba some base64-coded string, or a uuid. should both work no matter what.
   lazy val tokenGen = Gen.oneOf(
@@ -52,7 +52,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks {
 
   "OAuth2.transform" should "retry cases where we get a gateway timeout from the oauth service" in new OAuth2Action()(ConfigFactory.parseString(
     "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-  )) {
+  ), implicitly[ExecutionContext]) {
     @volatile var callCount = 0
     override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
       val retVal = callCount match {

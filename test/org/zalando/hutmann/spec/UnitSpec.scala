@@ -1,4 +1,4 @@
-package org.zalando.hutmann
+package org.zalando.hutmann.spec
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Seconds, Span }

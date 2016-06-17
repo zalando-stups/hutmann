@@ -1,7 +1,7 @@
 package org.zalando.hutmann.logging
 
-import org.zalando.hutmann.UnitSpec
 import org.zalando.hutmann.authentication.User
+import org.zalando.hutmann.spec.UnitSpec
 import play.api.test.FakeRequest
 
 import scala.util.Random
