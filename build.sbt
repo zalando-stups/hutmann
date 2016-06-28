@@ -21,6 +21,36 @@ libraryDependencies ++= Seq(
 maintainer := "team-kohle@zalando.de"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
+//pom extra info
+publishMavenStyle := true
+
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+}
+
+publishArtifact in Test := false
+
+pomExtra := (
+  <scm>
+    <url>git@github.com:zalando-incubator/hutmann.git</url>
+    <developerConnection>scm:git:git@github.com:zalando-incubator/hutmann.git</developerConnection>
+    <connection>scm:git:https://github.com/zalando-incubator/hutmann.git</connection>
+  </scm>
+    <developers>
+      <developer>
+        <name>Lena Brueder</name>
+        <email>lena.brueder@zalando.de</email>
+        <url>https://github.com/zalando</url>
+      </developer>
+    </developers>)
+
+homepage := Some(url("https://github.com/zalando-incubator/hutmann"))
+
+//settings to compile readme
 tutSettings
 tutSourceDirectory := baseDirectory.value / "tut"
 tutTargetDirectory := baseDirectory.value
