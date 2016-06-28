@@ -36,6 +36,8 @@ class OAuth2Action(
   val queryParamTokenPattern = Patterns.queryParamTokenPattern
   val headerTokenPattern = Patterns.headerTokenPattern
 
+  val logger = Logger("org.zalando.hutmann.oauth2")
+
   def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
     val request: WSRequest = WS.url(url)
       .withQueryString(query -> token)
@@ -49,7 +51,7 @@ class OAuth2Action(
         case Failure(NonFatal(ex)) => resp.status match {
           case Status.GATEWAY_TIMEOUT => Left(TimeoutAuthError)
           case _ =>
-            Logger.error(s"${ex.toString} with response code ${resp.status}, body '${resp.body}'")
+            logger.error(s"${ex.toString} with response code ${resp.status}, body '${resp.body}'")
             Left(AuthError("invalid_reponse", s"response code ${resp.status}, body '${resp.body}'"))
         }
       }
@@ -111,12 +113,12 @@ class OAuth2Action(
         if (isValidUser) {
           Right(user)
         } else {
-          Logger.info("User is authorized but doesn't fit the given filter")
+          logger.info("User is authorized but doesn't fit the given filter")
           Left(InsufficientPermissions(user))
         }
       }
     case Left(failure) =>
-      Logger.info(s"Failed to validate token: $failure")
+      logger.info(s"Failed to validate token: $failure")
       Future.successful(Left(NoAuthorization))
   }
 
@@ -130,11 +132,11 @@ class OAuth2Action(
       case Some(token) =>
         val futureToken = validateToken(token).recoverWith {
           case NonFatal(ex) =>
-            Logger.warn("Problem getting OAuth token, retrying...", ex)
+            logger.warn("Problem getting OAuth token, retrying...", ex)
             validateToken(token)
         }.flatMap{
           case Left(TimeoutAuthError) =>
-            Logger.warn("Gateway timeout while getting OAuth token, retrying...")
+            logger.warn("Gateway timeout while getting OAuth token, retrying...")
             validateToken(token)
           case other => Future.successful(other)
         }
@@ -144,7 +146,7 @@ class OAuth2Action(
         })
         futureUser.map(new UserRequest(_, request))
       case None =>
-        Logger.info("No authorization founder in 'Authorization' header or 'access_token' query parameter. Rejecting access.")
+        logger.info("No authorization founder in 'Authorization' header or 'access_token' query parameter. Rejecting access.")
         Future.successful(new UserRequest(Left(NoAuthorization), request))
     }
   }
@@ -183,7 +185,7 @@ class OAuth2Action(
   def recoveryBehaviour[A](request: RequestHeader): PartialFunction[scala.Throwable, Future[Result]] = PartialFunction{
     case NonFatal(ex) =>
       implicit val context: RequestContext = request
-      Logger.error("internal error while executing service", ex)
+      logger.error("internal error while executing service", ex)
       Future.successful(Results.InternalServerError)
   }
 }

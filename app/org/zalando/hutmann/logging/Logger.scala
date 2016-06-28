@@ -2,7 +2,9 @@ package org.zalando.hutmann.logging
 
 import java.time.{ Duration, ZonedDateTime }
 
-trait Logger {
+class Logger(name: String) {
+  val logger = play.api.Logger(name)
+
   protected def createLogString(message: => String, context: Context, file: sourcecode.File, line: sourcecode.Line): String = {
     val codeContext = s"${file.value.substring(file.value.lastIndexOf("/") + 1)}:${line.value}"
     val flowDuration = Duration.between(context.contextInitializationTime, ZonedDateTime.now())
@@ -18,36 +20,36 @@ trait Logger {
     s"$message - $contextInfo"
   }
 
-  def isTraceEnabled: Boolean = play.api.Logger.isTraceEnabled
-  def isDebugEnabled: Boolean = play.api.Logger.isDebugEnabled
-  def isInfoEnabled: Boolean = play.api.Logger.isInfoEnabled
-  def isWarnEnabled: Boolean = play.api.Logger.isWarnEnabled
-  def isErrorEnabled: Boolean = play.api.Logger.isErrorEnabled
+  def isTraceEnabled: Boolean = logger.isTraceEnabled
+  def isDebugEnabled: Boolean = logger.isDebugEnabled
+  def isInfoEnabled: Boolean = logger.isInfoEnabled
+  def isWarnEnabled: Boolean = logger.isWarnEnabled
+  def isErrorEnabled: Boolean = logger.isErrorEnabled
 
   def trace(message: => String)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.trace(createLogString(message, context, file, line))
+    logger.trace(createLogString(message, context, file, line))
   def trace(message: => String, error: => Throwable)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.trace(createLogString(message, context, file, line), error)
+    logger.trace(createLogString(message, context, file, line), error)
 
   def debug(message: => String)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.debug(createLogString(message, context, file, line))
+    logger.debug(createLogString(message, context, file, line))
   def debug(message: => String, error: => Throwable)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.debug(createLogString(message, context, file, line), error)
+    logger.debug(createLogString(message, context, file, line), error)
 
   def info(message: => String)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.info(createLogString(message, context, file, line))
+    logger.info(createLogString(message, context, file, line))
   def info(message: => String, error: => Throwable)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.info(createLogString(message, context, file, line), error)
+    logger.info(createLogString(message, context, file, line), error)
 
   def warn(message: => String)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.warn(createLogString(message, context, file, line))
+    logger.warn(createLogString(message, context, file, line))
   def warn(message: => String, error: => Throwable)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.warn(createLogString(message, context, file, line), error)
+    logger.warn(createLogString(message, context, file, line), error)
 
   def error(message: => String)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.error(createLogString(message, context, file, line))
+    logger.error(createLogString(message, context, file, line))
   def error(message: => String, error: => Throwable)(implicit context: Context, file: sourcecode.File, line: sourcecode.Line): Unit =
-    play.api.Logger.error(createLogString(message, context, file, line), error)
+    logger.error(createLogString(message, context, file, line), error)
 }
 
 /**
@@ -64,4 +66,6 @@ trait Logger {
   * If you really do not want to have a context, you can supply the case object
   * {{{NoContextAvailable}}} - either explicitly, or as an implicit value.
   */
-object Logger extends Logger
+object Logger extends Logger("default") {
+  def apply(name: String): Logger = new Logger(name)
+}
