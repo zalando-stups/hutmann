@@ -55,7 +55,7 @@ final class LoggingFilter(logHeaders: Boolean)(implicit ec: ExecutionContext) ex
       //this is the line that will get printed anyway, no matter what
       val headLine = result.header.headers.get("x-flow-id") match {
         case Some(flowId) =>
-          s"$flowId - ${rh.method} ${rh.path}$queryString returned ${result.header.status}$eTag, took ${requestTime}ms"
+          s"${rh.method} ${rh.path}$queryString returned ${result.header.status}$eTag, took ${requestTime}ms ($flowId)"
         case None =>
           s"${rh.method} ${rh.path}$queryString returned ${result.header.status}$eTag, took ${requestTime}ms"
       }
