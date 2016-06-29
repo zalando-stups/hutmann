@@ -7,12 +7,14 @@ import play.api.test.FakeRequest
 import scala.util.Random
 
 class LoggerDemo extends UnitSpec {
+  val logger = Logger()
+
   def logStatements(implicit context: Context): Unit = {
-    Logger.trace("This is a test")
-    Logger.debug("This is a test")
-    Logger.info("This is a test")
-    Logger.warn("This is a test")
-    Logger.error("This is a test")
+    logger.trace("This is a test")
+    logger.debug("This is a test")
+    logger.info("This is a test")
+    logger.warn("This is a test")
+    logger.error("This is a test")
   }
 
   "The logger" should "be demonstrated without a context" in {

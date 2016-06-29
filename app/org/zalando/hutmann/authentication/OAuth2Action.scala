@@ -36,7 +36,7 @@ class OAuth2Action(
   val queryParamTokenPattern = Patterns.queryParamTokenPattern
   val headerTokenPattern = Patterns.headerTokenPattern
 
-  val logger = Logger("org.zalando.hutmann.oauth2")
+  val logger = Logger( /*"org.zalando.hutmann.oauth2"*/ )
 
   def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
     val request: WSRequest = WS.url(url)

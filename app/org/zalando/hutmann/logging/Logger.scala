@@ -66,6 +66,11 @@ class Logger(name: String) {
   * If you really do not want to have a context, you can supply the case object
   * {{{NoContextAvailable}}} - either explicitly, or as an implicit value.
   */
-object Logger extends Logger("default") {
+object Logger extends Logger("application") {
   def apply(name: String): Logger = new Logger(name)
+  def apply()(implicit name: sourcecode.Name, fullname: sourcecode.FullName): Logger = {
+    //use the enclosing class name as logger name. To get it, extract the full name and remove the length of the name plus the extra dot.
+    val loggerName = fullname.value.dropRight(name.value.length + 1)
+    new Logger(loggerName)
+  }
 }
