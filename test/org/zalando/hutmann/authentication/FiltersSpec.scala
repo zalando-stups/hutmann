@@ -5,6 +5,7 @@ import java.util.UUID
 import org.zalando.hutmann.spec.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class FiltersSpec extends UnitSpec {
   def userWithScopes(scopes: String*) = User(UUID.randomUUID().toString, Map(scopes.map(_ -> None): _*), "test", "Bearer", 3600, Some("testuser"))
@@ -115,5 +116,12 @@ class FiltersSpec extends UnitSpec {
     andFilter(userWithScopes("myscope.read")).futureValue shouldBe true
     andFilter(userWithScopes("myscope.write")).futureValue shouldBe true
     andFilter(userWithScopes("myscope.read", "myscope.write")).futureValue shouldBe true
+  }
+  it should "be able to negate with !" in {
+    import Filters._
+    val notTrueFilter = !{ user: User => Future.successful(true) }
+    val notFalseFilter = !{ user: User => Future.successful(false) }
+    notTrueFilter(userWithScopes()).futureValue shouldBe false
+    notFalseFilter(userWithScopes()).futureValue shouldBe true
   }
 }

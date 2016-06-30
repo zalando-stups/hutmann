@@ -71,6 +71,10 @@ object Filters {
         case false => Future.successful(false)
       }
     }
+    /**Negation of a predicate*/
+    def unary_!(implicit ec: ExecutionContext): User => Future[Boolean] = { user: User =>
+      filter(user).map(!_)
+    }
     //scalastyle:on method.name
   }
 }
