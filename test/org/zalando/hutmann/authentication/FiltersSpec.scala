@@ -4,6 +4,8 @@ import java.util.UUID
 
 import org.zalando.hutmann.spec.UnitSpec
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 class FiltersSpec extends UnitSpec {
   def userWithScopes(scopes: String*) = User(UUID.randomUUID().toString, Map(scopes.map(_ -> None): _*), "test", "Bearer", 3600, Some("testuser"))
 
@@ -70,6 +72,30 @@ class FiltersSpec extends UnitSpec {
   }
   it should "fail for other tokens" in {
     Filters.bearerToken(userWithScopes().copy(tokenType = "Other")).futureValue shouldBe false
+  }
+
+  "Filters.isEmployee" should "succeed for employee tokens" in {
+    val isEmployee = Filters.isEmployee
+    isEmployee(userWithScopes().copy(realm = "/employees", uid = Some("testuser"))).futureValue shouldBe true
+  }
+  it should "fail for other tokens" in {
+    val isEmployee = Filters.isEmployee
+    isEmployee(userWithScopes()).futureValue shouldBe false
+    isEmployee(userWithScopes().copy(realm = "/employees", uid = None)).futureValue shouldBe false
+    //here, the realm is missing
+    isEmployee(userWithScopes().copy(uid = Some("testuser"))).futureValue shouldBe false
+  }
+
+  "Filters.isService" should "succeed for service tokens" in {
+    val isService = Filters.isService
+    isService(userWithScopes().copy(realm = "/services", uid = Some("testservice"))).futureValue shouldBe true
+  }
+  it should "fail for other tokens" in {
+    val isService = Filters.isService
+    isService(userWithScopes()).futureValue shouldBe false
+    isService(userWithScopes().copy(realm = "/services", uid = None)).futureValue shouldBe false
+    //here, the realm is missing
+    isService(userWithScopes().copy(uid = Some("testservice"))).futureValue shouldBe false
   }
 
   import scala.concurrent.ExecutionContext.Implicits.global

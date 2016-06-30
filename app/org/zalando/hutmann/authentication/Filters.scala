@@ -38,6 +38,11 @@ object Filters {
     Future.successful(user.realm == realm)
   }
 
+  /**Checks whether the caller comes from realm "/employees" and has a uid*/
+  def isEmployee(implicit ec: ExecutionContext): User => Future[Boolean] = hasUid && fromRealm("/employees")
+  /**Checks whether the caller comes from the realm "/services" and has a uid*/
+  def isService(implicit ec: ExecutionContext): User => Future[Boolean] = hasUid && fromRealm("/services")
+
   /**Checks whether the given token is a bearer token*/
   val bearerToken: User => Future[Boolean] = { user: User =>
     Future.successful(user.tokenType == "Bearer")
