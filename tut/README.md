@@ -30,7 +30,10 @@ import play.api.mvc.Results._
 become
 
 ```tut:silent
-  def heartbeat = OAuth2Action() {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
+
+  def heartbeat = OAuth2Action()(implicitly[ExecutionContext]) {
     Ok("<3")
   }
 ```
@@ -75,21 +78,21 @@ implementation if you need it by simply subclassing the Action. Besides the simp
 more elaborate example:
 
 ```tut:silent
-def heartbeat = OAuth2Action(_.uid.contains("jdoe")) {
+import org.zalando.hutmann.authentication.Filters._
+def heartbeat = OAuth2Action(scope("myservice.read"))(implicitly[ExecutionContext]) {
   Ok("<3")
 }
 ```
 
-will only allow the user `jdoe`, and only if he has a valid access token, while
+will only allow the users with scope `myservice.read`, and only if he has a valid access token, while
 
 ```tut:silent
-def heartbeat = OAuth2Action(_.scope.isDefinedAt("my_service.read_all")) {
+def heartbeat = OAuth2Action(isEmployee)(implicitly[ExecutionContext]) {
   Ok("<3")
 }
 ```
 
-will check if the service user has the scope `my_service.read_all`. Sometimes, a `scope` can hold additional information - like `uid`, which just is a special
-scope - therefore it's a map, and you can have a look in there as well.
+will check if the token is from realm "/employees" and has a scope "uid" property set.
 
 In both cases, the body of the action will only get called when the user may access it, and error responses are generated accordingly. If you do not
 want this behaviour, but care yourself for the handling, you have two possibilities:
@@ -140,7 +143,7 @@ object MyController extends Controller {
     Logger.warn("watch out!")
   }
 
-  def createSession: Action[JsValue] = OAuth2Action()(parse.tolerantJson) { request =>
+  def createSession: Action[JsValue] = OAuth2Action()(implicitly[ExecutionContext])(parse.tolerantJson) { request =>
     implicit val context: Context = request //there is an implicit conversion for the request
     doSomething
     Logger.info("some message")
