@@ -16,6 +16,7 @@ final class LoggingFilter(logHeaders: Boolean)(implicit ec: ExecutionContext) ex
   def this()(implicit ec: ExecutionContext) = this(logHeaders = false)
 
   val accessToken = "access_token"
+  val logger = Logger("org.zalando.hutmann.filters")
 
   /**
     * Function that deletes some values from the given sequence of key/value pairs, depending on the key.
@@ -54,7 +55,7 @@ final class LoggingFilter(logHeaders: Boolean)(implicit ec: ExecutionContext) ex
       //this is the line that will get printed anyway, no matter what
       val headLine = result.header.headers.get("x-flow-id") match {
         case Some(flowId) =>
-          s"$flowId - ${rh.method} ${rh.path}$queryString returned ${result.header.status}$eTag, took ${requestTime}ms"
+          s"${rh.method} ${rh.path}$queryString returned ${result.header.status}$eTag, took ${requestTime}ms ($flowId)"
         case None =>
           s"${rh.method} ${rh.path}$queryString returned ${result.header.status}$eTag, took ${requestTime}ms"
       }
@@ -70,7 +71,7 @@ final class LoggingFilter(logHeaders: Boolean)(implicit ec: ExecutionContext) ex
       } else {
         headLine
       }
-      Logger.info(logLine)
+      logger.info(logLine)
 
       result
     }

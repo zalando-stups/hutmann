@@ -1,4 +1,4 @@
-package org.zalando.hutmann
+package org.zalando.hutmann.spec
 
 import org.scalatest.concurrent.PatienceConfiguration.Interval
 import org.scalatest.concurrent.ScalaFutures

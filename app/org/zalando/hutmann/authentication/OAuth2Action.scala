@@ -6,13 +6,13 @@ import com.typesafe.config.Config
 import org.zalando.hutmann.logging.{ Context, Logger, RequestContext }
 import play.api.Play.{ configuration, current }
 import play.api.http.Status
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.ws.{ WS, WSRequest }
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 import scala.util.{ Failure, Success, Try }
@@ -24,10 +24,10 @@ import scala.util.{ Failure, Success, Try }
   * @param config The config section containing the OAuth server information
   */
 class OAuth2Action(
-  val filter:         User => Boolean = { user: User => true },
-  val autoReject:     Boolean         = true,
-  val requestTimeout: Duration        = 1.seconds
-)(implicit config: Config)
+  val filter:         User => Future[Boolean] = { user: User => Future.successful(true) },
+  val autoReject:     Boolean                 = true,
+  val requestTimeout: Duration                = 1.seconds
+)(implicit config: Config, ec: ExecutionContext)
     extends ActionBuilder[UserRequest] {
 
   val url = config.getString("org.zalando.hutmann.authentication.oauth2.tokenInfoUrl")
@@ -35,6 +35,8 @@ class OAuth2Action(
 
   val queryParamTokenPattern = Patterns.queryParamTokenPattern
   val headerTokenPattern = Patterns.headerTokenPattern
+
+  val logger = Logger( /*"org.zalando.hutmann.oauth2"*/ )
 
   def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
     val request: WSRequest = WS.url(url)
@@ -49,7 +51,7 @@ class OAuth2Action(
         case Failure(NonFatal(ex)) => resp.status match {
           case Status.GATEWAY_TIMEOUT => Left(TimeoutAuthError)
           case _ =>
-            Logger.error(s"${ex.toString} with response code ${resp.status}, body '${resp.body}'")
+            logger.error(s"${ex.toString} with response code ${resp.status}, body '${resp.body}'")
             Left(AuthError("invalid_reponse", s"response code ${resp.status}, body '${resp.body}'"))
         }
       }
@@ -105,18 +107,19 @@ class OAuth2Action(
   /**
     * Scores the types of problems that can occur and maps them to appropriate user-usable ones.
     */
-  def tokenResultScoring[A](implicit context: Context): (Either[OAuth2Error, User]) => Either[AuthorizationProblem, User] = {
+  def tokenResultScoring[A](implicit context: Context): (Either[OAuth2Error, User]) => Future[Either[AuthorizationProblem, User]] = {
     case Right(user) =>
-      val isValidUser = filter(user)
-      if (isValidUser) {
-        Right(user)
-      } else {
-        Logger.info("User is authorized but doesn't fit the given filter")
-        Left(InsufficientPermissions(user))
+      filter(user).map { isValidUser =>
+        if (isValidUser) {
+          Right(user)
+        } else {
+          logger.info("User is authorized but doesn't fit the given filter")
+          Left(InsufficientPermissions(user))
+        }
       }
     case Left(failure) =>
-      Logger.info(s"Failed to validate token: $failure")
-      Left(NoAuthorization)
+      logger.info(s"Failed to validate token: $failure")
+      Future.successful(Left(NoAuthorization))
   }
 
   /**
@@ -129,33 +132,23 @@ class OAuth2Action(
       case Some(token) =>
         val futureToken = validateToken(token).recoverWith {
           case NonFatal(ex) =>
-            Logger.warn("Problem getting OAuth token, retrying...", ex)
+            logger.warn("Problem getting OAuth token, retrying...", ex)
             validateToken(token)
         }.flatMap{
           case Left(TimeoutAuthError) =>
-            Logger.warn("Gateway timeout while getting OAuth token, retrying...")
+            logger.warn("Gateway timeout while getting OAuth token, retrying...")
             validateToken(token)
           case other => Future.successful(other)
         }
-        val futureUser = futureToken.map(tokenResultScoring).recoverWith({
+        val futureUser = futureToken.flatMap(tokenResultScoring).recoverWith({
           case _: TimeoutException => Future.successful(Left(AuthorizationTimeout))
           case e                   => throw e
         })
         futureUser.map(new UserRequest(_, request))
       case None =>
-        Logger.info("No authorization founder in 'Authorization' header or 'access_token' query parameter. Rejecting access.")
+        logger.info("No authorization founder in 'Authorization' header or 'access_token' query parameter. Rejecting access.")
         Future.successful(new UserRequest(Left(NoAuthorization), request))
     }
-  }
-
-  /**
-    * Creates a new instance of `OAuth2` using the predicate to filter the user
-    *
-    * @param predicate a function that inspects the user if he should get access or not
-    * @return
-    */
-  def withUserFilter(predicate: (User) => Boolean): ActionBuilder[UserRequest] = {
-    new OAuth2Action(predicate)(config)
   }
 
   override def invokeBlock[A](request: Request[A], block: (UserRequest[A]) => Future[Result]): Future[Result] = {
@@ -192,18 +185,28 @@ class OAuth2Action(
   def recoveryBehaviour[A](request: RequestHeader): PartialFunction[scala.Throwable, Future[Result]] = PartialFunction{
     case NonFatal(ex) =>
       implicit val context: RequestContext = request
-      Logger.error("internal error while executing service", ex)
+      logger.error("internal error while executing service", ex)
       Future.successful(Results.InternalServerError)
   }
 }
 
 object OAuth2Action {
+  def withUserFilter(
+    filter: User => Boolean
+  )(implicit ec: ExecutionContext): OAuth2Action =
+    apply({ user: User => Future.successful(filter(user)) })
+
   def apply(
-    filter:         User => Boolean = { user: User => true },
-    autoReject:     Boolean         = true,
-    requestTimeout: Duration        = 1.second
-  ): OAuth2Action =
-    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying)
+    filter: User => Future[Boolean] = { user: User => Future.successful(true) }
+  )(implicit ec: ExecutionContext): OAuth2Action =
+    apply(filter, autoReject = true, 1.second)
+
+  def apply(
+    filter:         User => Future[Boolean],
+    autoReject:     Boolean,
+    requestTimeout: Duration
+  )(implicit ec: ExecutionContext): OAuth2Action =
+    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec)
 }
 
 /** Holds the regular expression patterns that are used for reading the tokens from headers and query parameters. Extracted here due to performance reasons.*/

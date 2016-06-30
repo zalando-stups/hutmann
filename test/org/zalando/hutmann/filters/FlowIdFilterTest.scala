@@ -1,8 +1,7 @@
 package org.zalando.hutmann.filters
 
 import org.scalatestplus.play._
-import org.zalando.hutmann.{ PlayUnitSpec, UnitSpec }
-import org.zalando.hutmann.filters.{ Create, FlowIdFilter, Strict }
+import org.zalando.hutmann.spec.{ PlayUnitSpec, UnitSpec }
 import play.api.http.Status
 import play.api.mvc._
 import play.api.test.Helpers._

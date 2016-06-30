@@ -2,8 +2,8 @@ package org.zalando.hutmann.authentication
 
 import java.util.UUID
 
-import org.zalando.hutmann.UnitSpec
 import User.app2AppUserReader
+import org.zalando.hutmann.spec.UnitSpec
 import play.api.libs.json.Json
 
 import scala.util.Random
