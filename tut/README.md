@@ -50,8 +50,10 @@ The library currently only works with Play 2.4. It depends on its JSON and WS li
 
 ## Getting it
 
+Versioning follows the Play version number it works with. 2.4.x therefore is a version that works with Play 2.4, 2.5.x (if any) works with Play 2.5.
+
 ```scala
-libraryDependencies += "org.zalando" %% "hutmann" % "0.1"
+libraryDependencies += "org.zalando" %% "hutmann" % "2.4.0"
 ```
 
 ## Configuring
