@@ -7,6 +7,9 @@ import play.api.mvc.Results.BadRequest
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import java.util.{ Base64, UUID }
 
+import akka.stream.Materializer
+import com.google.inject.Inject
+
 /**
   * A flow id filter that checks flow ids and can add them if they are not present, as well as copy them to the output
   * if needed.
@@ -15,14 +18,10 @@ import java.util.{ Base64, UUID }
   *                 <li> Create -> creates a new flow-id if the header doesn't contain one</li></ul>
   * @param copyFlowIdToResult If the flow-id should be copied from the input to the output headers.
   */
-final class FlowIdFilter(
-    behavior:           FlowIdBehavior = Create,
-    copyFlowIdToResult: Boolean        = true
-) extends Filter {
-  /**
-    * Zero-Argument constructor, needed for Guice-Injection, where default-parameters are not enough.
-    */
-  def this() = this(Create, true)
+sealed abstract class FlowIdFilter(
+    behavior:           FlowIdBehavior,
+    copyFlowIdToResult: Boolean
+)(implicit val mat: Materializer) extends Filter {
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
     val (filtered, optFlowId) = rh.headers.get("X-Flow-ID") match {
@@ -79,7 +78,8 @@ final class FlowIdFilter(
 }
 
 sealed trait FlowIdBehavior
-
 case object Strict extends FlowIdBehavior
-
 case object Create extends FlowIdBehavior
+
+final class CreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter(Create, true)
+final class StrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter(Strict, true)

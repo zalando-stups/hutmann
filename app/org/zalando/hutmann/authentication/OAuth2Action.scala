@@ -4,9 +4,10 @@ import java.util.concurrent.TimeoutException
 
 import com.typesafe.config.Config
 import org.zalando.hutmann.logging.{ Context, Logger, RequestContext }
+import play.api.{ Configuration, Environment }
 import play.api.Play.{ configuration, current }
 import play.api.http.Status
-import play.api.libs.ws.{ WS, WSRequest }
+import play.api.libs.ws.{ WS, WSClient, WSRequest }
 import play.api.mvc.Results._
 import play.api.mvc._
 
@@ -27,7 +28,7 @@ class OAuth2Action(
   val filter:         User => Future[Boolean] = { user: User => Future.successful(true) },
   val autoReject:     Boolean                 = true,
   val requestTimeout: Duration                = 1.seconds
-)(implicit config: Config, ec: ExecutionContext)
+)(implicit config: Config, ec: ExecutionContext, ws: WSClient)
     extends ActionBuilder[UserRequest] {
 
   val url = config.getString("org.zalando.hutmann.authentication.oauth2.tokenInfoUrl")
@@ -39,10 +40,10 @@ class OAuth2Action(
   val logger = Logger( /*"org.zalando.hutmann.oauth2"*/ )
 
   def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
-    val request: WSRequest = WS.url(url)
+    val request: WSRequest = ws.url(url)
       .withQueryString(query -> token)
       .withHeaders("Accept" -> "application/json")
-      .withRequestTimeout(requestTimeout.toMillis)
+      .withRequestTimeout(requestTimeout)
     // Todo Only allow communication via HTTPS, check certificates (e.g. only specific root CA allowed)
     request.get().map(resp => {
       Try(OAuth2Response.fromJson(resp.json)) match {
@@ -193,20 +194,20 @@ class OAuth2Action(
 object OAuth2Action {
   def withUserFilter(
     filter: User => Boolean
-  )(implicit ec: ExecutionContext): OAuth2Action =
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration): OAuth2Action =
     apply({ user: User => Future.successful(filter(user)) })
 
   def apply(
     filter: User => Future[Boolean] = { user: User => Future.successful(true) }
-  )(implicit ec: ExecutionContext): OAuth2Action =
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration): OAuth2Action =
     apply(filter, autoReject = true, 1.second)
 
   def apply(
     filter:         User => Future[Boolean],
     autoReject:     Boolean,
     requestTimeout: Duration
-  )(implicit ec: ExecutionContext): OAuth2Action =
-    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec)
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration): OAuth2Action =
+    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec, ws)
 }
 
 /** Holds the regular expression patterns that are used for reading the tokens from headers and query parameters. Extracted here due to performance reasons.*/
