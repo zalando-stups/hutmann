@@ -1,5 +1,7 @@
 package org.zalando.hutmann.filters
 
+import akka.stream.Materializer
+import com.google.inject.Inject
 import org.zalando.hutmann.logging.{ Context, Logger }
 import play.api.http.HeaderNames
 import play.api.mvc._
@@ -12,8 +14,7 @@ import scala.concurrent.{ ExecutionContext, Future }
   *
   * If you use the FlowIdFilter, please ensure you inject the FlowIdFilter first, so flow id's can be logged too.
   */
-final class LoggingFilter(logHeaders: Boolean)(implicit ec: ExecutionContext) extends Filter {
-  def this()(implicit ec: ExecutionContext) = this(logHeaders = false)
+sealed class LoggingFilter(logHeaders: Boolean)(implicit val mat: Materializer, ec: ExecutionContext) extends Filter {
 
   val accessToken = "access_token"
   val logger = Logger("org.zalando.hutmann.filters")
@@ -77,3 +78,6 @@ final class LoggingFilter(logHeaders: Boolean)(implicit ec: ExecutionContext) ex
     }
   }
 }
+
+final class LoggingFilterWithoutHeaderLogging @Inject() (implicit mat: Materializer, ec: ExecutionContext) extends LoggingFilter(logHeaders = false)
+final class DefaultLoggingFilter @Inject() (implicit mat: Materializer, ec: ExecutionContext) extends LoggingFilter(logHeaders = true)
