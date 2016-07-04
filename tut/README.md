@@ -104,8 +104,44 @@ you want what behaviour. This is the recommended approach.
 
 The default timeout for contacting the server is 1 second, a request will be repeated once in case a timeout occurs, with circuit breakers applied.
 
-#### Create own authorization
+#### Create own authorization / using your own servers
 You can do so by subclassing OAuth2Action and `override def validateToken`.
+
+#### How to mock values in tests?
+Just create this in your project:
+
+```tut:silent
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import com.typesafe.config.Config
+
+import org.zalando.hutmann.authentication._
+trait Auth {
+  def authAction(
+      filter:     User => Future[Boolean] = { user: User => Future.successful(true) },
+      autoReject: Boolean                 = true,
+      requestTimeout: Duration            = 1.second
+    )(implicit config: Config, ec: ExecutionContext): OAuth2Action =
+      OAuth2Action(filter, autoReject, requestTimeout)
+}
+trait FakeAuth extends Auth {
+  val userResult: Either[AuthorizationProblem, User]
+  override def authAction(
+      filter:     User => Future[Boolean] = { user: User => Future.successful(true) },
+      autoReject: Boolean                 = true,
+      requestTimeout: Duration            = 1.second
+    )(implicit config: Config, ec: ExecutionContext): OAuth2Action =
+      new OAuth2Action(filter, autoReject, requestTimeout) {
+        override def transform[A](request: Request[A]): Future[UserRequest[A]] =
+          Future.successful(new UserRequest(userResult, request))
+      }
+}
+```
+You now only need to mix in `Auth` in your controller, and `FakeAuth` in your controller in your tests, additionally provide the
+result you'd like to have in the `FakeAuth`.
+
+#### How to respond with custom responses for 401, 403 and 504 cases?
+Extend `OAuth2Action` and override `autoRejectBehaviour`. You can copy the initial implementation and adjust for your needs.
 
 ## Filters
 Play filters are used to run right after the routing and before invoking the action. This makes them particularly useful for cases like
