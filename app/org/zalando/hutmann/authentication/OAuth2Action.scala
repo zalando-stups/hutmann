@@ -37,7 +37,7 @@ class OAuth2Action(
   val queryParamTokenPattern = Patterns.queryParamTokenPattern
   val headerTokenPattern = Patterns.headerTokenPattern
 
-  val logger = Logger( /*"org.zalando.hutmann.oauth2"*/ )
+  val logger = Logger()
 
   def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
     val request: WSRequest = ws.url(url)
@@ -117,6 +117,10 @@ class OAuth2Action(
           logger.info("User is authorized but doesn't fit the given filter")
           Left(InsufficientPermissions(user))
         }
+      }.recover {
+        case NonFatal(ex) =>
+          logger.info("User is authorized but the given filter failed to execute because of an exception", ex)
+          Left(InsufficientPermissions(user))
       }
     case Left(failure) =>
       logger.info(s"Failed to validate token: $failure")

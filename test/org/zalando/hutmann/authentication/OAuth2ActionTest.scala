@@ -94,6 +94,12 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
       result.user shouldBe Left(InsufficientPermissions(testUser))
     }
   }
+  it should "reject a user if the filter throws an exception" in {
+    forAll { testUser: User =>
+      val result = oauth2withMockedService(Right(testUser), filter = { user => Future.failed(new IllegalArgumentException) }).transform(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
+      result.user shouldBe Left(InsufficientPermissions(testUser))
+    }
+  }
   it should "reject a user if the external system could not be reached" in {
     forAll(tokenGen) { token: String =>
       val result = oauth2withMockedService(Left(AuthorizationTimeout)).transform(FakeRequest("GET", s"/?access_token=$token")).futureValue
