@@ -2,8 +2,9 @@ package org.zalando.hutmann.logging
 
 import java.time.ZonedDateTime
 
-import org.zalando.hutmann.authentication.{ AuthorizationProblem, NoAuthorization, User, UserRequest }
-import play.api.mvc.{ Request, RequestHeader }
+import org.zalando.hutmann.authentication.{AuthorizationProblem, NoAuthorization, User, UserRequest}
+import org.zalando.hutmann.filters.FlowIdFilter.FlowIdHeader
+import play.api.mvc.{Request, RequestHeader}
 
 import scala.language.implicitConversions
 
@@ -89,7 +90,7 @@ object Context {
     * @tparam A      The type of the body of the request.
     */
   implicit def request2loggingContext[A](request: UserRequest[A]): RequestContext =
-    RequestContext(requestId = request.id, flowId = request.headers.get("X-Flow-ID"), requestHeader = request, user = request.user)
+    RequestContext(requestId = request.id, flowId = request.headers.get(FlowIdHeader), requestHeader = request, user = request.user)
 
   /**
     * Implicit conversion to allow easy creation of {{{Context}}}. Usage:
@@ -102,7 +103,7 @@ object Context {
     * @tparam A      The type of the body of the request.
     */
   implicit def request2loggingContext[A](request: Request[A]): RequestContext =
-    RequestContext(requestId = request.id, flowId = request.headers.get("X-Flow-ID"), requestHeader = request, user = Left(NoAuthorization))
+    RequestContext(requestId = request.id, flowId = request.headers.get(FlowIdHeader), requestHeader = request, user = Left(NoAuthorization))
 
   /**
     * Implicit conversion to allow easy creation of {{{Context}}}. Usage:
@@ -115,5 +116,5 @@ object Context {
     * @tparam A      The type of the body of the request.
     */
   implicit def request2loggingContext[A](request: RequestHeader): RequestContext =
-    RequestContext(requestId = request.id, flowId = request.headers.get("X-Flow-ID"), requestHeader = request, user = Left(NoAuthorization))
+    RequestContext(requestId = request.id, flowId = request.headers.get(FlowIdHeader), requestHeader = request, user = Left(NoAuthorization))
 }
