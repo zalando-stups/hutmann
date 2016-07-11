@@ -2,21 +2,22 @@ package org.zalando.hutmann.spec
 
 import org.scalatest.concurrent.PatienceConfiguration.Interval
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{ Seconds, Span }
-import org.scalatestplus.play.PlaySpec
+import org.scalatest.time.{Seconds, Span}
+import org.scalatestplus.play.{PlaySpec, PortNumber, WsScalaTestClient}
 import play.api.Application
-import play.api.libs.ws.{ WS, WSResponse }
+import play.api.http.{HeaderNames, MimeTypes}
+import play.api.libs.ws.WSResponse
 
-trait PlayUnitSpec extends PlaySpec with ScalaFutures {
+trait PlayUnitSpec extends PlaySpec with ScalaFutures with WsScalaTestClient {
   def myPublicAddress(): String
+  implicit val portNumber: PortNumber
 
   def callWs(testPaymentGatewayURL: String)(implicit app: Application): WSResponse = {
     val callbackURL = s"http://${myPublicAddress()}/callback"
-
     whenReady(
-      WS.url(testPaymentGatewayURL)
+      wsUrl(testPaymentGatewayURL)
         .withQueryString("callbackURL" -> callbackURL)
-        .withHeaders("Accept" -> "text/plain")
+        .withHeaders(HeaderNames.ACCEPT -> MimeTypes.TEXT)
         .get(),
       Interval(Span(10, Seconds))
     ) { result =>
