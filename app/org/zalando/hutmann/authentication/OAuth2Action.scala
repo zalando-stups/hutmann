@@ -3,19 +3,19 @@ package org.zalando.hutmann.authentication
 import java.util.concurrent.TimeoutException
 
 import com.typesafe.config.Config
-import org.zalando.hutmann.logging.{Context, Logger, RequestContext}
+import org.zalando.hutmann.logging.{ Context, Logger, RequestContext }
 import play.api.Configuration
-import play.api.http.{HeaderNames, MimeTypes, Status}
-import play.api.libs.ws.{WSClient, WSRequest}
+import play.api.http.{ HeaderNames, MimeTypes, Status }
+import play.api.libs.ws.{ WSClient, WSRequest }
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
   * A play action that authorizes a user using the Zalando OAuth2 server

@@ -2,9 +2,9 @@ package org.zalando.hutmann.logging
 
 import java.time.ZonedDateTime
 
-import org.zalando.hutmann.authentication.{AuthorizationProblem, NoAuthorization, User, UserRequest}
+import org.zalando.hutmann.authentication.{ AuthorizationProblem, NoAuthorization, User, UserRequest }
 import org.zalando.hutmann.filters.FlowIdFilter.FlowIdHeader
-import play.api.mvc.{Request, RequestHeader}
+import play.api.mvc.{ Request, RequestHeader }
 
 import scala.language.implicitConversions
 
