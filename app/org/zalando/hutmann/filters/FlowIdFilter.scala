@@ -7,6 +7,9 @@ import play.api.mvc.Results.BadRequest
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import java.util.{ Base64, UUID }
 
+import akka.stream.Materializer
+import com.google.inject.Inject
+import FlowIdFilter.FlowIdHeader
 /**
   * A flow id filter that checks flow ids and can add them if they are not present, as well as copy them to the output
   * if needed.
@@ -15,30 +18,26 @@ import java.util.{ Base64, UUID }
   *                 <li> Create -> creates a new flow-id if the header doesn't contain one</li></ul>
   * @param copyFlowIdToResult If the flow-id should be copied from the input to the output headers.
   */
-final class FlowIdFilter(
-    behavior:           FlowIdBehavior = Create,
-    copyFlowIdToResult: Boolean        = true
-) extends Filter {
-  /**
-    * Zero-Argument constructor, needed for Guice-Injection, where default-parameters are not enough.
-    */
-  def this() = this(Create, true)
+sealed abstract class FlowIdFilter(
+    behavior:           FlowIdBehavior,
+    copyFlowIdToResult: Boolean
+)(implicit val mat: Materializer) extends Filter {
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
-    val (filtered, optFlowId) = rh.headers.get("X-Flow-ID") match {
+    val (filtered, optFlowId) = rh.headers.get(FlowIdHeader) match {
       case Some(id) =>
         (nextFilter(rh), Some(id))
       case None =>
         behavior match {
           case Create =>
             val flowId = createFlowId
-            val newRh = rh.copy(headers = rh.headers.add("X-Flow-ID" -> flowId))
+            val newRh = rh.copy(headers = rh.headers.add(FlowIdHeader -> flowId))
             (nextFilter(newRh), Some(flowId))
           case Strict => (Future.successful(BadRequest("Missing flow id header")), None)
         }
     }
     if (copyFlowIdToResult) {
-      optFlowId.fold(filtered)(flowId => filtered.map(_.withHeaders("X-Flow-ID" -> flowId)))
+      optFlowId.fold(filtered)(flowId => filtered.map(_.withHeaders(FlowIdHeader -> flowId)))
     } else {
       filtered
     }
@@ -79,7 +78,12 @@ final class FlowIdFilter(
 }
 
 sealed trait FlowIdBehavior
-
 case object Strict extends FlowIdBehavior
-
 case object Create extends FlowIdBehavior
+
+final class CreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter(Create, true)
+final class StrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter(Strict, true)
+
+object FlowIdFilter {
+  val FlowIdHeader: String = "X-Flow-ID"
+}
