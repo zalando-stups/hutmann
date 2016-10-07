@@ -130,7 +130,7 @@ class OAuth2Action(
     * Add the authorization information to the request.
     */
   def transform[A](request: Request[A]): Future[UserRequest[A]] = {
-    implicit val context: Context = request
+    implicit val context: RequestContext = request
     val tokenOpt: Option[String] = getToken(request)
     tokenOpt match {
       case Some(token) =>

@@ -11,6 +11,8 @@ import scala.language.implicitConversions
 /** Holds context information about what should be logged.*/
 sealed trait Context {
   val contextInitializationTime = ZonedDateTime.now()
+  val extraInfo: Map[String, String]
+  def updated(key: String, value: String): Context
 }
 
 /**
@@ -20,7 +22,10 @@ sealed trait Context {
   * achieve, instead of forgetting to log flow ids and only see it
   * on the live system when it is too late.
   */
-case object NoContextAvailable extends Context
+case object NoContextAvailable extends Context {
+  override val extraInfo: Map[String, String] = Map.empty
+  def updated(key: String, value: String): NoContextAvailable.type = this
+}
 
 /** Marks objects that have a flow id. Comes with an extractor to get the flow id if needed.*/
 trait FlowIdAware {
@@ -51,11 +56,14 @@ object FlowIdAware {
   * @param user          The user that issued the request (if any).
   */
 case class RequestContext(
-  requestId:           Long,
-  override val flowId: Option[String],
-  requestHeader:       RequestHeader,
-  user:                Either[AuthorizationProblem, User]
-) extends Context with FlowIdAware
+    requestId:              Long,
+    override val flowId:    Option[String],
+    requestHeader:          RequestHeader,
+    user:                   Either[AuthorizationProblem, User],
+    override val extraInfo: Map[String, String]                = Map.empty
+) extends Context with FlowIdAware {
+  override def updated(key: String, value: String): RequestContext = this.copy(extraInfo = extraInfo.updated(key, value))
+}
 
 object RequestId {
   /**
@@ -73,10 +81,12 @@ object RequestId {
 }
 
 case class JobContext(
-  name:                String,
-  override val flowId: Option[String],
-  startDateTime:       ZonedDateTime  = ZonedDateTime.now()
-) extends Context with FlowIdAware
+    name:                   String,
+    override val flowId:    Option[String],
+    override val extraInfo: Map[String, String] = Map.empty
+) extends Context with FlowIdAware {
+  override def updated(key: String, value: String): JobContext = this.copy(extraInfo = extraInfo.updated(key, value))
+}
 
 object Context {
   /**
@@ -89,8 +99,7 @@ object Context {
     * @param request The play request object that should be used to extract information.
     * @tparam A      The type of the body of the request.
     */
-  implicit def request2loggingContext[A](request: UserRequest[A]): RequestContext =
-    RequestContext(requestId = request.id, flowId = request.headers.get(FlowIdHeader), requestHeader = request, user = request.user)
+  implicit def request2loggingContext[A](request: UserRequest[A]): RequestContext = request.context
 
   /**
     * Implicit conversion to allow easy creation of {{{Context}}}. Usage:

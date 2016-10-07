@@ -4,9 +4,9 @@ import javax.inject.Inject
 
 import akka.stream.Materializer
 import org.scalatestplus.play._
-import org.zalando.hutmann.spec.{PlayUnitSpec, UnitSpec}
+import org.zalando.hutmann.spec.{ PlayUnitSpec, UnitSpec }
 import play.api.Application
-import play.api.http.{DefaultHttpFilters, HttpFilters, HttpVerbs, Status}
+import play.api.http.{ DefaultHttpFilters, HttpFilters, HttpVerbs, Status }
 import play.api.inject._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc._
