@@ -30,10 +30,16 @@ import play.api.mvc.Results._
 become
 
 ```tut:silent
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.ExecutionContext
+import play.api.libs.ws.WSClient
+import play.api.Configuration
 
-  def heartbeat = OAuth2Action()(implicitly[ExecutionContext]) {
+//these come from the application normally
+implicit val ws: WSClient = null
+implicit val config: Configuration = null
+import scala.concurrent.ExecutionContext.Implicits.global
+
+  def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]) { 
     Ok("<3")
   }
 ```
@@ -56,7 +62,7 @@ The library currently only works with Play 2.4. It depends on its JSON and WS li
 Versioning follows the Play version number it works with. 2.4.x therefore is a version that works with Play 2.4, 2.5.x (if any) works with Play 2.5.
 
 ```scala
-libraryDependencies += "org.zalando" %% "hutmann" % "2.4.0"
+libraryDependencies += "org.zalando" %% "hutmann" % "2.5.1"
 ```
 
 ## Configuring
@@ -79,7 +85,7 @@ more elaborate example:
 
 ```tut:silent
 import org.zalando.hutmann.authentication.Filters._
-def heartbeat = OAuth2Action(scope("myservice.read"))(implicitly[ExecutionContext]) {
+def heartbeat = OAuth2Action(scope("myservice.read"))(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]) {
   Ok("<3")
 }
 ```
@@ -87,7 +93,7 @@ def heartbeat = OAuth2Action(scope("myservice.read"))(implicitly[ExecutionContex
 will only allow the users with scope `myservice.read`, and only if he has a valid access token, while
 
 ```tut:silent
-def heartbeat = OAuth2Action(isEmployee)(implicitly[ExecutionContext]) {
+def heartbeat = OAuth2Action(isEmployee)(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]) {
   Ok("<3")
 }
 ```
@@ -121,8 +127,8 @@ trait Auth {
       filter:     User => Future[Boolean] = { user: User => Future.successful(true) },
       autoReject: Boolean                 = true,
       requestTimeout: Duration            = 1.second
-    )(implicit config: Config, ec: ExecutionContext): OAuth2Action =
-      OAuth2Action(filter, autoReject, requestTimeout)
+    )(implicit config: Config, ec: ExecutionContext, ws: WSClient): OAuth2Action =
+      new OAuth2Action(filter, autoReject, requestTimeout)
 }
 trait FakeAuth extends Auth {
   val userResult: Either[AuthorizationProblem, User]
@@ -130,10 +136,10 @@ trait FakeAuth extends Auth {
       filter:     User => Future[Boolean] = { user: User => Future.successful(true) },
       autoReject: Boolean                 = true,
       requestTimeout: Duration            = 1.second
-    )(implicit config: Config, ec: ExecutionContext): OAuth2Action =
+    )(implicit config: Config, ec: ExecutionContext, ws: WSClient): OAuth2Action =
       new OAuth2Action(filter, autoReject, requestTimeout) {
         override def transform[A](request: Request[A]): Future[UserRequest[A]] =
-          Future.successful(new UserRequest(userResult, request))
+          Future.successful(new UserRequest(userResult, request)(request))
       }
 }
 ```
@@ -170,8 +176,7 @@ You can use the integrated logger in your projects as well, and benefit from the
 have your flow ids in every log entry.
 
 ```tut:silent
-import org.zalando.hutmann.logging.Logger
-import org.zalando.hutmann.logging.Context
+import org.zalando.hutmann.logging._
 import play.api.libs.json._
 
 object MyController extends Controller {
@@ -179,7 +184,7 @@ object MyController extends Controller {
     Logger.warn("watch out!")
   }
 
-  def createSession: Action[JsValue] = OAuth2Action()(implicitly[ExecutionContext])(parse.tolerantJson) { request =>
+  def createSession: Action[JsValue] = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration])(parse.tolerantJson) { request =>
     implicit val context: Context = request //there is an implicit conversion for the request
     doSomething
     Logger.info("some message")

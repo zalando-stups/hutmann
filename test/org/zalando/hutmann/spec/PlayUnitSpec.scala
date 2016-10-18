@@ -2,10 +2,10 @@ package org.zalando.hutmann.spec
 
 import org.scalatest.concurrent.PatienceConfiguration.Interval
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
-import org.scalatestplus.play.{PlaySpec, PortNumber, WsScalaTestClient}
+import org.scalatest.time.{ Seconds, Span }
+import org.scalatestplus.play.{ PlaySpec, PortNumber, WsScalaTestClient }
 import play.api.Application
-import play.api.http.{HeaderNames, MimeTypes}
+import play.api.http.{ HeaderNames, MimeTypes }
 import play.api.libs.ws.WSResponse
 
 trait PlayUnitSpec extends PlaySpec with ScalaFutures with WsScalaTestClient {

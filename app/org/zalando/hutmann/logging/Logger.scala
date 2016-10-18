@@ -10,14 +10,19 @@ class Logger(name: String) {
     val flowDuration = Duration.between(context.contextInitializationTime, ZonedDateTime.now())
 
     val contextInfo = context match {
-      case RequestContext(requestId, Some(flowId), _, _) => s"${flowDuration.toMillis}ms/$codeContext/$flowId"
-      case RequestContext(requestId, None, _, _)         => s"${flowDuration.toMillis}ms/$codeContext/requestId_$requestId"
-      case JobContext(name, Some(flowId), _)             => s"${flowDuration.toMillis}ms/$codeContext/$flowId - $name"
-      case JobContext(name, None, _)                     => s"${flowDuration.toMillis}ms/$codeContext/$name"
-      case NoContextAvailable                            => s"$codeContext/NoContextAvailable"
+      case RequestContext(requestId, Some(flowId), _, _, _) => s"${flowDuration.toMillis}ms/$codeContext/$flowId"
+      case RequestContext(requestId, None, _, _, _)         => s"${flowDuration.toMillis}ms/$codeContext/requestId_$requestId"
+      case JobContext(name, Some(flowId), _)                => s"${flowDuration.toMillis}ms/$codeContext/$flowId - $name"
+      case JobContext(name, None, _)                        => s"${flowDuration.toMillis}ms/$codeContext/$name"
+      case NoContextAvailable                               => s"$codeContext/NoContextAvailable"
     }
 
-    s"$message - $contextInfo"
+    lazy val extraInfo = (for { (key, value) <- context.extraInfo } yield { s"$key=$value" }).mkString(",")
+    if (context.extraInfo.isEmpty) {
+      s"$message - $contextInfo"
+    } else {
+      s"$message - $extraInfo - $contextInfo"
+    }
   }
 
   def isTraceEnabled: Boolean = logger.isTraceEnabled
