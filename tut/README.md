@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/zalando-incubator/hutmann.svg?branch=master)](https://travis-ci.org/zalando-incubator/hutmann)
+[![Coverage Status](https://coveralls.io/repos/github/zalando-incubator/hutmann/badge.svg?branch=master)](https://coveralls.io/github/hutmann/hutmann?branch=master)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://raw.githubusercontent.com/zalando-incubator/hutmann/master/LICENSE)
+
 # Hutmann - a Scala/Play library for OAuth2 authentication
 
 This library provides support for using OAuth2 for authentication, mainly for backends, that use the Play framework (2.4). Additionally, it brings
