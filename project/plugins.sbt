@@ -1,5 +1,5 @@
 // The Play plugin
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.4")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.9")
 
 //tut lib
 addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.4.2")
