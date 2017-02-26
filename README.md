@@ -48,6 +48,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
   }
 ```
 
+or use(recommended) [EssentialAction](https://www.playframework.com/documentation/2.5.x/ScalaEssentialAction) to authenticate request first and then proceed with everything else like request body parsing etc.
+side effects of not using EssentialAction is explained in detail in this [issue](https://github.com/zalando-incubator/hutmann/issues/8)
+
+```scala
+ import scala.concurrent.ExecutionContext
+ import play.api.libs.ws.WSClient
+ import play.api.Configuration
+ import scala.util.Future
+ 
+ //these come from the application normally
+ implicit val ws: WSClient = null
+ implicit val config: Configuration = null
+ import scala.concurrent.ExecutionContext.Implicits.global
+ 
+ def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]).essentialAction(parse.default) { 
+     Future.successful(Ok("<3"))
+ }
+```
+
 and it automatically makes sure that requests to that route have a valid authentication token - although most probably,
 you won't make your heartbeat endpoint secured.
 

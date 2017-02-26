@@ -2,16 +2,22 @@ package org.zalando.hutmann.authentication
 
 import java.util.concurrent.TimeoutException
 
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Flow
+import akka.util.ByteString
 import com.typesafe.config.Config
 import org.zalando.hutmann.logging.{ Context, Logger, RequestContext }
 import play.api.Configuration
 import play.api.http.{ HeaderNames, MimeTypes, Status }
+import play.api.libs.streams.Accumulator
 import play.api.libs.ws.{ WSClient, WSRequest }
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
@@ -129,39 +135,63 @@ class OAuth2Action(
   /**
     * Add the authorization information to the request.
     */
-  def transform[A](request: Request[A]): Future[UserRequest[A]] = {
-    implicit val context: RequestContext = request
-    val tokenOpt: Option[String] = getToken(request)
+  def authenticate(requestHeader: RequestHeader): Future[Either[AuthorizationProblem, User]] = {
+    implicit val context: RequestContext = requestHeader
+    val tokenOpt: Option[String] = getToken(requestHeader)
     tokenOpt match {
       case Some(token) =>
         val futureToken = validateToken(token).recoverWith {
           case NonFatal(ex) =>
             logger.warn("Problem getting OAuth token, retrying...", ex)
             validateToken(token)
-        }.flatMap{
+        }.flatMap {
           case Left(TimeoutAuthError) =>
             logger.warn("Gateway timeout while getting OAuth token, retrying...")
             validateToken(token)
           case other => Future.successful(other)
         }
-        val futureUser = futureToken.flatMap(tokenResultScoring).recoverWith({
+        futureToken.flatMap(tokenResultScoring).recoverWith({
           case _: TimeoutException => Future.successful(Left(AuthorizationTimeout))
           case e                   => throw e
         })
-        futureUser.map(new UserRequest(_, request))
       case None =>
         logger.info("No authorization founder in 'Authorization' header or 'access_token' query parameter. Rejecting access.")
-        Future.successful(new UserRequest(Left(NoAuthorization), request))
+        Future.successful(Left(NoAuthorization))
     }
   }
 
   override def invokeBlock[A](request: Request[A], block: (UserRequest[A]) => Future[Result]): Future[Result] = {
-    transform(request).flatMap(userRequest =>
+    authenticate(request).flatMap { user =>
+      implicit val context: RequestContext = request
+      val userRequest = new UserRequest[A](user, request)
       if (autoReject) {
         autoRejectBehaviour(userRequest.user, block(userRequest))
       } else {
         block(userRequest)
-      }) recoverWith recoveryBehaviour(request)
+      }
+    } recoverWith recoveryBehaviour(request)
+  }
+
+  def essentialAction[A](bodyParser: BodyParser[A])(block: UserRequest[A] => Future[Result]): EssentialAction = {
+    implicit val actorSystem = ActorSystem("hutmann-actor-system")
+    implicit val materializer = ActorMaterializer(namePrefix = Some("hutmann-actor-materializer"))
+    EssentialAction { requestHeader =>
+      Accumulator.flatten[ByteString, Result] {
+        authenticate(requestHeader).map { user =>
+
+          lazy val accumulator = Action.async[A](bodyParser) { request =>
+            val userRequest = new UserRequest[A](user, request)(request)
+            block(userRequest)
+          }(requestHeader)
+
+          if (autoReject) {
+            autoRejectBehaviour(user, accumulator)
+          } else {
+            accumulator
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -181,6 +211,19 @@ class OAuth2Action(
       case Left(AuthorizationTimeout)       => Future.successful(GatewayTimeout)
     }
 
+  def autoRejectBehaviour[A](
+    userResult:  Either[AuthorizationProblem, User],
+    accumulator: => Accumulator[ByteString, Result]
+  ): Accumulator[ByteString, Result] = {
+
+    lazy val emptyFlow = Flow[ByteString]
+    userResult match {
+      case Right(user)                      => accumulator
+      case Left(InsufficientPermissions(_)) => emptyFlow ~>: Accumulator.done[Result](Forbidden)
+      case Left(NoAuthorization)            => emptyFlow ~>: Accumulator.done[Result](Unauthorized)
+      case Left(AuthorizationTimeout)       => emptyFlow ~>: Accumulator.done[Result](GatewayTimeout)
+    }
+  }
   /**
     * Function that describes how to behave when an exception is caught. This function may as well just re-throw the exception,
     * which forces Play to handle that problem. Default-Behaviour is to answer with 500 - internal server error, and log that exception
