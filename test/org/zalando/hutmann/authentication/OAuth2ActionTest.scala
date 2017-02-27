@@ -34,12 +34,12 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
         def oauth2 = new OAuth2Action()(ConfigFactory.parseString(
           "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-        ), implicitly[ExecutionContext], wsClient)
+        ), implicitly[ExecutionContext], wsClient, materializer)
 
         def oauth2withMockedService(user: Either[AuthorizationProblem, User] = Right(testUser.arbitrary.sample.get), filter: User => Future[Boolean] = { user => Future.successful(true) }) =
           new OAuth2Action(filter)(ConfigFactory.parseString(
             "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-          ), implicitly[ExecutionContext], wsClient) {
+          ), implicitly[ExecutionContext], wsClient, materializer) {
             override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
               Future.successful(user)
             }
@@ -48,7 +48,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
         def oauth2withMockedServiceForEssentialAction(user: Either[AuthorizationProblem, User], accessToken: String, filter: User => Future[Boolean] = { user => Future.successful(true) }) =
           new OAuth2Action(filter)(ConfigFactory.parseString(
             "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-          ), implicitly[ExecutionContext], wsClient) {
+          ), implicitly[ExecutionContext], wsClient, materializer) {
             override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
               if (token == accessToken) Future.successful(user) else Future.successful(Left(NoAuthorization))
             }
@@ -121,7 +121,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
       "OAuth2.authenticate" should "retry cases where we get a gateway timeout from the oauth service" in new OAuth2Action()(ConfigFactory.parseString(
         "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-      ), implicitly[ExecutionContext], wsClient) {
+      ), implicitly[ExecutionContext], wsClient, materializer) {
         @volatile var callCount = 0
 
         override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {

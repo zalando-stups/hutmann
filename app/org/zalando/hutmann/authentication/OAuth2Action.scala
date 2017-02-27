@@ -2,9 +2,7 @@ package org.zalando.hutmann.authentication
 
 import java.util.concurrent.TimeoutException
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.typesafe.config.Config
@@ -33,7 +31,7 @@ class OAuth2Action(
   val filter:         User => Future[Boolean] = { user: User => Future.successful(true) },
   val autoReject:     Boolean                 = true,
   val requestTimeout: Duration                = 1.seconds
-)(implicit config: Config, ec: ExecutionContext, ws: WSClient)
+)(implicit config: Config, ec: ExecutionContext, ws: WSClient, materializer: Materializer)
     extends ActionBuilder[UserRequest] {
 
   val url = config.getString("org.zalando.hutmann.authentication.oauth2.tokenInfoUrl")
@@ -173,8 +171,6 @@ class OAuth2Action(
   }
 
   def essentialAction[A](bodyParser: BodyParser[A])(block: UserRequest[A] => Future[Result]): EssentialAction = {
-    implicit val actorSystem = ActorSystem("hutmann-actor-system")
-    implicit val materializer = ActorMaterializer(namePrefix = Some("hutmann-actor-materializer"))
     EssentialAction { requestHeader =>
       Accumulator.flatten[ByteString, Result] {
         authenticate(requestHeader).map { user =>
@@ -240,20 +236,20 @@ class OAuth2Action(
 object OAuth2Action {
   def withUserFilter(
     filter: User => Boolean
-  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration): OAuth2Action =
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer): OAuth2Action =
     apply({ user: User => Future.successful(filter(user)) })
 
   def apply(
     filter: User => Future[Boolean] = { user: User => Future.successful(true) }
-  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration): OAuth2Action =
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer): OAuth2Action =
     apply(filter, autoReject = true, 1.second)
 
   def apply(
     filter:         User => Future[Boolean],
     autoReject:     Boolean,
     requestTimeout: Duration
-  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration): OAuth2Action =
-    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec, ws)
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer): OAuth2Action =
+    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec, ws, materializer)
 }
 
 /** Holds the regular expression patterns that are used for reading the tokens from headers and query parameters. Extracted here due to performance reasons.*/
