@@ -12,7 +12,8 @@ approvals:
       minimum: 1
       from:
         users:
-          - lenalebt
+          - musiKk
+          - hardvain
 
 X-Zalando-Team: "kohle"
 X-Zalando-Type: code
