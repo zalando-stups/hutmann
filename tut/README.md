@@ -102,6 +102,26 @@ def heartbeat = OAuth2Action(isEmployee)(implicitly[ExecutionContext], implicitl
 }
 ```
 
+or use(recommended) [EssentialAction](https://www.playframework.com/documentation/2.5.x/ScalaEssentialAction) to authenticate request first and then proceed with everything else like request body parsing etc.
+side effects of not using EssentialAction is explained in detail in this [issue](https://github.com/zalando-incubator/hutmann/issues/8)
+
+```tut:silent
+import scala.concurrent.ExecutionContext
+import play.api.libs.ws.WSClient
+import play.api.Configuration
+import scala.util.Future
+
+//these come from the application normally
+implicit val ws: WSClient = null
+implicit val config: Configuration = null
+import scala.concurrent.ExecutionContext.Implicits.global
+
+def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]).essentialAction(parse.default) { 
+    Future.successful(Ok("<3"))
+}
+```
+
+
 will check if the token is from realm "/employees" and has a scope "uid" property set.
 
 In both cases, the body of the action will only get called when the user may access it, and error responses are generated accordingly. If you do not

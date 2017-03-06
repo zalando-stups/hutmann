@@ -9,12 +9,15 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatestplus.play.OneAppPerSuite
 import org.zalando.hutmann.logging.Context
 import org.zalando.hutmann.spec.UnitSpec
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{ BodyParsers, Results }
 import play.api.test.{ FakeRequest, WsTestClient }
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ ExecutionContext, Future }
 
-class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with OneAppPerSuite with WsTestClient {
+class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with OneAppPerSuite with WsTestClient with Results {
   implicit lazy val materializer: Materializer = app.materializer
   withClient {
     wsClient =>
@@ -31,14 +34,23 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
         def oauth2 = new OAuth2Action()(ConfigFactory.parseString(
           "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-        ), implicitly[ExecutionContext], wsClient)
+        ), implicitly[ExecutionContext], wsClient, materializer)
 
         def oauth2withMockedService(user: Either[AuthorizationProblem, User] = Right(testUser.arbitrary.sample.get), filter: User => Future[Boolean] = { user => Future.successful(true) }) =
           new OAuth2Action(filter)(ConfigFactory.parseString(
             "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-          ), implicitly[ExecutionContext], wsClient) {
+          ), implicitly[ExecutionContext], wsClient, materializer) {
             override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
               Future.successful(user)
+            }
+          }
+
+        def oauth2withMockedServiceForEssentialAction(user: Either[AuthorizationProblem, User], accessToken: String, filter: User => Future[Boolean] = { user => Future.successful(true) }) =
+          new OAuth2Action(filter)(ConfigFactory.parseString(
+            "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
+          ), implicitly[ExecutionContext], wsClient, materializer) {
+            override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
+              if (token == accessToken) Future.successful(user) else Future.successful(Left(NoAuthorization))
             }
           }
 
@@ -77,39 +89,39 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
       "OAuth2Action" should "accept a user with no filters" in {
         forAll { testUser: User =>
-          val result = oauth2withMockedService(Right(testUser)).transform(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
-          result.user shouldBe Right(testUser)
+          val result = oauth2withMockedService(Right(testUser)).authenticate(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
+          result shouldBe Right(testUser)
         }
       }
 
       it should "accept a user where the filter applies correctly" in {
         forAll { testUser: User =>
-          val result = oauth2withMockedService(Right(testUser), filter = Filters.scope("myscope")).transform(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
-          result.user shouldBe Right(testUser)
+          val result = oauth2withMockedService(Right(testUser), filter = Filters.scope("myscope")).authenticate(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
+          result shouldBe Right(testUser)
         }
       }
       it should "reject a user if the filter does not match" in {
         forAll { testUser: User =>
-          val result = oauth2withMockedService(Right(testUser), filter = Filters.scope("mywrongscope")).transform(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
-          result.user shouldBe Left(InsufficientPermissions(testUser))
+          val result = oauth2withMockedService(Right(testUser), filter = Filters.scope("mywrongscope")).authenticate(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
+          result shouldBe Left(InsufficientPermissions(testUser))
         }
       }
       it should "reject a user if the filter throws an exception" in {
         forAll { testUser: User =>
-          val result = oauth2withMockedService(Right(testUser), filter = { user => Future.failed(new IllegalArgumentException) }).transform(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
-          result.user shouldBe Left(InsufficientPermissions(testUser))
+          val result = oauth2withMockedService(Right(testUser), filter = { user => Future.failed(new IllegalArgumentException) }).authenticate(FakeRequest("GET", s"/?access_token=${testUser.accessToken}")).futureValue
+          result shouldBe Left(InsufficientPermissions(testUser))
         }
       }
       it should "reject a user if the external system could not be reached" in {
         forAll(tokenGen) { token: String =>
-          val result = oauth2withMockedService(Left(AuthorizationTimeout)).transform(FakeRequest("GET", s"/?access_token=$token")).futureValue
-          result.user shouldBe Left(NoAuthorization)
+          val result = oauth2withMockedService(Left(AuthorizationTimeout)).authenticate(FakeRequest("GET", s"/?access_token=$token")).futureValue
+          result shouldBe Left(NoAuthorization)
         }
       }
 
-      "OAuth2.transform" should "retry cases where we get a gateway timeout from the oauth service" in new OAuth2Action()(ConfigFactory.parseString(
+      "OAuth2.authenticate" should "retry cases where we get a gateway timeout from the oauth service" in new OAuth2Action()(ConfigFactory.parseString(
         "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-      ), implicitly[ExecutionContext], wsClient) {
+      ), implicitly[ExecutionContext], wsClient, materializer) {
         @volatile var callCount = 0
 
         override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
@@ -123,11 +135,83 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
         forAll(tokenGen) { token: String =>
           callCount = 0
-          transform(FakeRequest("GET", s"/?access_token=$token")).futureValue.user
+          authenticate(FakeRequest("GET", s"/?access_token=$token")).futureValue
           withClue("tested if validateToken was called the correct number of times") {
             callCount shouldBe 2
           }
         }(generatorDrivenConfig.copy(minSuccessful = 5), Shrink.shrinkAny)
+      }
+
+      "OAuth2" should "parse request body before authenticating" in {
+        val helper = new Helper()
+        forAll { testUser: User =>
+          val fakeRequest = FakeRequest("GET", "/").
+            withHeaders("Authorization" -> s"Bearer ${UUID.randomUUID().toString}").
+            withBody(helper.multipartFormData)
+
+          implicit val writable = helper.multiPartFormDataWritable(fakeRequest)
+
+          val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
+            async(BodyParsers.parse.multipartFormData(helper.handleFilePart)){ request =>
+              request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
+                case FilePart(_, _, _, result) =>
+                  Future.successful(Ok(result.toString))
+              }
+            }
+          val response = call(essentialAction, fakeRequest)
+          whenReady(response) { res =>
+            helper.mockDb should have size 10
+          }
+          status(response) shouldBe UNAUTHORIZED
+        }
+      }
+
+      "OAuth2.essentialAction" should "not parse request body before authenticating" in {
+        val helper = new Helper()
+        forAll { testUser: User =>
+          val fakeRequest = FakeRequest("GET", "/").
+            withHeaders("Authorization" -> s"Bearer ${UUID.randomUUID().toString}").
+            withBody(helper.multipartFormData)
+
+          implicit val writable = helper.multiPartFormDataWritable(fakeRequest)
+
+          val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
+            essentialAction(BodyParsers.parse.multipartFormData(helper.handleFilePart)){ request =>
+              request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
+                case FilePart(_, _, _, result) =>
+                  Future.successful(Ok(result.toString))
+              }
+            }
+          val response = call(essentialAction, fakeRequest)
+          whenReady(response) { res =>
+            helper.mockDb should have size 0
+          }
+          status(response) shouldBe UNAUTHORIZED
+        }
+      }
+
+      "OAuth2.essentialAction" should "parse request body after authenticating" in {
+        val helper = new Helper()
+        forAll { testUser: User =>
+          val fakeRequest = FakeRequest("GET", "/").
+            withHeaders("Authorization" -> s"Bearer ${testUser.accessToken}").
+            withBody(helper.multipartFormData)
+
+          implicit val writable = helper.multiPartFormDataWritable(fakeRequest)
+
+          val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
+            essentialAction(BodyParsers.parse.multipartFormData(helper.handleFilePart)) { request =>
+              request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
+                case FilePart(_, _, _, result) =>
+                  Future.successful(Ok(result.toString))
+              }
+            }
+          val response = call(essentialAction, fakeRequest)
+          whenReady(response) { res =>
+            helper.mockDb should have size 10
+          }
+          status(response) shouldBe OK
+        }
       }
   }
 }
