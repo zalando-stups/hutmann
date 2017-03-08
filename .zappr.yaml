@@ -7,7 +7,7 @@ approvals:
       from:
         orgs:
           - "zalando"
-    # lenalebt is required approver on every PR
+    # maintainer is required approver on every PR
     seniors:
       minimum: 1
       from:
