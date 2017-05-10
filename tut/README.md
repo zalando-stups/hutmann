@@ -194,6 +194,46 @@ This flow id shall additionally be added to all log entries of your services. Th
 The `FlowIdFilter` inspects the requests that come in if they have a flow id and - depending on the configuration - either adds one if it there is none,
  or rejects the request.
 
+ There are four FlowIdFilter implementations:
+
+ `final class CreateFlowIdFilter`
+ `final class StrictFlowIdFilter`
+
+ `final class MdcCreateFlowIdFilter`
+ `final class MdcStrictFlowIdFilter`
+
+ The two last ones sets the **Flow Id** value in the SLF4J MDC, so that it can be used in the logs just adding ```X{X-Flow-ID}``` to the log pattern in yout logback.xml file.
+
+
+ #### How to use it
+
+ In to your filters file:
+ ```tut:silent
+ import javax.inject.Inject
+ import play.api.http.DefaultHttpFilters
+ import org.zalando.hutmann.filters.[FlowIdFilterImplementation]
+
+ class Filters @Inject() (
+   flowIdFilter: [FlowIdFilterImplementation],
+   /*...your other filters ... */
+ ) extends DefaultHttpFilters(flowIdFilter, /*...*/)
+
+ ```
+
+
+ The Mdc FlowIdFilter implementations works capturing the request in a thread local, making it available to any code executed by the Play default execution context. In order to make it works you need to configure the akka dispatcher as following:
+
+ ```
+ akka {
+   actor {
+     default-dispatcher {
+       type: org.zalando.hutmann.dispatchers.ContextPropagatingDispatcherConfigurator
+     }
+   }
+ }
+ ```
+
+
 ## More logging
 
 You can use the integrated logger in your projects as well, and benefit from the automatic context evaluation that will take care that you

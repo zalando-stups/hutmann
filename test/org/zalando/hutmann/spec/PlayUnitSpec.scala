@@ -6,13 +6,14 @@ import org.scalatest.time.{ Seconds, Span }
 import org.scalatestplus.play.{ PlaySpec, PortNumber, WsScalaTestClient }
 import play.api.Application
 import play.api.http.{ HeaderNames, MimeTypes }
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{ WSClient, WSResponse }
 
 trait PlayUnitSpec extends PlaySpec with ScalaFutures with WsScalaTestClient {
   def myPublicAddress(): String
   implicit val portNumber: PortNumber
 
   def callWs(testPaymentGatewayURL: String)(implicit app: Application): WSResponse = {
+    implicit val wSClient = app.injector.instanceOf[WSClient]
     val callbackURL = s"http://${myPublicAddress()}/callback"
     whenReady(
       wsUrl(testPaymentGatewayURL)

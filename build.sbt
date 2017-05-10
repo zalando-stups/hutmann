@@ -13,9 +13,9 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "2.2.6",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.0",
-  "org.scalacheck" %% "scalacheck" % "1.12.5"
+  "org.scalatest" %% "scalatest" % "3.0.1",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0",
+  "org.scalacheck" %% "scalacheck" % "1.13.4"
 ) map (_ % "test")
 
 maintainer := "team-kohle@zalando.de"
