@@ -12,7 +12,7 @@ import com.google.inject.Inject
 import FlowIdFilter.FlowIdHeader
 import org.zalando.hutmann.logging.Context
 
-sealed protected abstract class FlowIdFilter(implicit val mat: Materializer) extends Filter {
+sealed abstract class FlowIdFilter(implicit val mat: Materializer) extends Filter {
   self: FlowIdBehavior with TraceBehavior =>
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
@@ -30,7 +30,7 @@ sealed protected abstract class FlowIdFilter(implicit val mat: Materializer) ext
 
 }
 
-protected sealed trait TraceBehavior {
+sealed trait TraceBehavior {
   def trace[T](requestHeader: RequestHeader)(block: => T): T
 }
 

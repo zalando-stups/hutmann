@@ -48,6 +48,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
   }
 ```
 
+or use(recommended) [EssentialAction](https://www.playframework.com/documentation/2.5.x/ScalaEssentialAction) to authenticate request first and then proceed with everything else like request body parsing etc.
+side effects of not using EssentialAction is explained in detail in this [issue](https://github.com/zalando-incubator/hutmann/issues/8)
+
+```scala
+ import scala.concurrent.ExecutionContext
+ import play.api.libs.ws.WSClient
+ import play.api.Configuration
+ import scala.util.Future
+ 
+ //these come from the application normally
+ implicit val ws: WSClient = null
+ implicit val config: Configuration = null
+ import scala.concurrent.ExecutionContext.Implicits.global
+ 
+ def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]).essentialAction(parse.default) { 
+     Future.successful(Ok("<3"))
+ }
+```
+
 and it automatically makes sure that requests to that route have a valid authentication token - although most probably,
 you won't make your heartbeat endpoint secured.
 
@@ -101,26 +120,6 @@ def heartbeat = OAuth2Action(isEmployee)(implicitly[ExecutionContext], implicitl
   Ok("<3")
 }
 ```
-
-or use(recommended) [EssentialAction](https://www.playframework.com/documentation/2.5.x/ScalaEssentialAction) to authenticate request first and then proceed with everything else like request body parsing etc.
-side effects of not using EssentialAction is explained in detail in this [issue](https://github.com/zalando-incubator/hutmann/issues/8)
-
-```scala
-import scala.concurrent.ExecutionContext
-import play.api.libs.ws.WSClient
-import play.api.Configuration
-import scala.util.Future
-
-//these come from the application normally
-implicit val ws: WSClient = null
-implicit val config: Configuration = null
-import scala.concurrent.ExecutionContext.Implicits.global
-
-def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]).essentialAction(parse.default) { 
-    Future.successful(Ok("<3"))
-}
-```
-
 
 will check if the token is from realm "/employees" and has a scope "uid" property set.
 
@@ -194,7 +193,7 @@ This flow id shall additionally be added to all log entries of your services. Th
 The `FlowIdFilter` inspects the requests that come in if they have a flow id and - depending on the configuration - either adds one if it there is none,
  or rejects the request.
 
- There are four FlowIdFilter implementations:
+There are four FlowIdFilter implementations:
 
  `final class CreateFlowIdFilter`
  `final class StrictFlowIdFilter`
@@ -209,24 +208,15 @@ The `FlowIdFilter` inspects the requests that come in if they have a flow id and
 
  In to your filters file:
  ```tut:silent
-     |  import javax.inject.Inject
-     |  import play.api.http.DefaultHttpFilters
-     |  import org.zalando.hutmann.filters.[FlowIdFilterImplementation]
-<console>:52: error: identifier expected but '[' found.
+ import javax.inject.Inject
+ import play.api.http.DefaultHttpFilters
  import org.zalando.hutmann.filters.[FlowIdFilterImplementation]
-                                    ^
-     | 
-     |  class Filters @Inject() (
-     |    flowIdFilter: [FlowIdFilterImplementation],
-<console>:54: error: identifier expected but '[' found.
+
+ class Filters @Inject() (
    flowIdFilter: [FlowIdFilterImplementation],
-                 ^
-     |    /*...your other filters ... */
-     |  ) extends DefaultHttpFilters(flowIdFilter, /*...*/)
-<console>:55: error: illegal start of simple expression
+   /*...your other filters ... */
  ) extends DefaultHttpFilters(flowIdFilter, /*...*/)
-                                                   ^
-     | 
+
  ```
 
 
