@@ -202,7 +202,7 @@ The `FlowIdFilter` inspects the requests that come in if they have a flow id and
  `final class MdcCreateFlowIdFilter`
  `final class MdcStrictFlowIdFilter`
 
- The two last ones sets the **Flow Id** value in the SLF4J MDC, so that it can be used in the logs just adding ```X{X-Flow-ID}``` to the log pattern in yout logback.xml file.
+ The two last ones sets the **Flow Id** value in the SLF4J MDC, so that it can be used in the logs just adding ```%X{X-Flow-ID}``` to the log pattern in yout logback.xml file.
 
 
  #### How to use it
@@ -233,6 +233,7 @@ The `FlowIdFilter` inspects the requests that come in if they have a flow id and
  }
  ```
 
+And use the Execution context injected by play
 
 ## More logging
 

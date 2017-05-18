@@ -201,7 +201,7 @@ There are four FlowIdFilter implementations:
  `final class MdcCreateFlowIdFilter`
  `final class MdcStrictFlowIdFilter`
 
- The two last ones sets the **Flow Id** value in the SLF4J MDC, so that it can be used in the logs just adding ```X{X-Flow-ID}``` to the log pattern in yout logback.xml file.
+ The two last ones sets the **Flow Id** value in the SLF4J MDC, so that it can be used in the logs just adding ```%X{X-Flow-ID}``` to the log pattern in yout logback.xml file.
 
 
  #### How to use it
@@ -232,6 +232,7 @@ There are four FlowIdFilter implementations:
  }
  ```
 
+And use the Execution context injected by play
 
 ## More logging
 
