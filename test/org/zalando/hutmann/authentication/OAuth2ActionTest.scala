@@ -133,13 +133,13 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           retVal
         }
 
-        forAll(tokenGen) { token: String =>
+        forAll(tokenGen, minSuccessful(5)) { token: String =>
           callCount = 0
           authenticate(FakeRequest("GET", s"/?access_token=$token")).futureValue
           withClue("tested if validateToken was called the correct number of times") {
             callCount shouldBe 2
           }
-        }(generatorDrivenConfig.copy(minSuccessful = 5), Shrink.shrinkAny)
+        }
       }
 
       "OAuth2" should "parse request body before authenticating" in {

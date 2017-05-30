@@ -2,6 +2,7 @@ package org.zalando.hutmann.logging
 
 import java.time.ZonedDateTime
 
+import org.slf4j.MDC
 import org.zalando.hutmann.authentication.{ AuthorizationProblem, NoAuthorization, User, UserRequest }
 import org.zalando.hutmann.filters.FlowIdFilter.FlowIdHeader
 import play.api.mvc.{ Request, RequestHeader }
@@ -89,6 +90,40 @@ case class JobContext(
 }
 
 object Context {
+  self =>
+  private val context = new ThreadLocal[Context]() {
+    override def initialValue(): Context = NoContextAvailable
+  }
+
+  def getContext: Context = {
+    context.get()
+  }
+
+  def setContext(ctx: Context): Unit = {
+    assert(ctx.isInstanceOf[Context], "context can't be null")
+    context.set(ctx)
+    ctx match {
+      case FlowIdAware(flowId) =>
+        MDC.put(FlowIdHeader, flowId)
+      case NoContextAvailable =>
+        MDC.remove(FlowIdHeader)
+      case _ =>
+    }
+  }
+
+  /**
+    * Execute the given block with the given context.
+    */
+  def withContext[T](ctx: Context)(block: => T): T = {
+    val oldContext = getContext
+    try {
+      setContext(ctx)
+      block
+    } finally {
+      setContext(oldContext)
+    }
+  }
+
   /**
     * Implicit conversion to allow easy creation of {{{Context}}}. Usage:
     *

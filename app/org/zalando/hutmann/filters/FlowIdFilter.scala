@@ -10,37 +10,55 @@ import java.util.{ Base64, UUID }
 import akka.stream.Materializer
 import com.google.inject.Inject
 import FlowIdFilter.FlowIdHeader
-/**
-  * A flow id filter that checks flow ids and can add them if they are not present, as well as copy them to the output
-  * if needed.
-  * @param behavior Accepts: <br />
-  *                 <ul><li> Strict -> declines the request if the header doesn't contain a flow-id</li>
-  *                 <li> Create -> creates a new flow-id if the header doesn't contain one</li></ul>
-  * @param copyFlowIdToResult If the flow-id should be copied from the input to the output headers.
-  */
-sealed abstract class FlowIdFilter(
-    behavior:           FlowIdBehavior,
-    copyFlowIdToResult: Boolean
-)(implicit val mat: Materializer) extends Filter {
+import org.zalando.hutmann.logging.Context
+
+sealed abstract class FlowIdFilter(implicit val mat: Materializer) extends Filter {
+  self: FlowIdBehavior with TraceBehavior =>
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
-    val (filtered, optFlowId) = rh.headers.get(FlowIdHeader) match {
-      case Some(id) =>
-        (nextFilter(rh), Some(id))
+    val optFlowId = getFlowId(rh)
+    optFlowId match {
       case None =>
-        behavior match {
-          case Create =>
-            val flowId = createFlowId
-            val newRh = rh.copy(headers = rh.headers.add(FlowIdHeader -> flowId))
-            (nextFilter(newRh), Some(flowId))
-          case Strict => (Future.successful(BadRequest("Missing flow id header")), None)
+        Future.successful(BadRequest("Missing flow id header"))
+      case Some(flowId) =>
+        val headers = rh.copy(headers = rh.headers.add(FlowIdHeader -> flowId))
+        trace(headers) {
+          nextFilter(headers).map(_.withHeaders(FlowIdHeader -> flowId))
         }
     }
-    if (copyFlowIdToResult) {
-      optFlowId.fold(filtered)(flowId => filtered.map(_.withHeaders(FlowIdHeader -> flowId)))
-    } else {
-      filtered
-    }
+  }
+
+}
+
+sealed trait TraceBehavior {
+  def trace[T](requestHeader: RequestHeader)(block: => T): T
+}
+
+sealed trait MdcTraceBehavior extends TraceBehavior {
+  def trace[T](requestHeader: RequestHeader)(block: => T): T = {
+    val ctx = Context.request2loggingContext(requestHeader)
+    Context.withContext(ctx)(block)
+  }
+}
+
+sealed trait NoTraceBehavior extends TraceBehavior {
+  def trace[T](requestHeader: RequestHeader)(block: => T): T = block
+}
+
+sealed trait FlowIdBehavior {
+  def getFlowId(requestHeader: RequestHeader): Option[String]
+}
+
+sealed trait StrictFlowIdBehavior extends FlowIdBehavior {
+  def getFlowId(requestHeader: RequestHeader): Option[String] = {
+    requestHeader.headers.get(FlowIdHeader)
+  }
+}
+
+sealed trait CreateFlowIdBehavior extends FlowIdBehavior {
+
+  def getFlowId(requestHeader: RequestHeader): Option[String] = {
+    requestHeader.headers.get(FlowIdHeader).orElse(Some(createFlowId))
   }
 
   private def createFlowId: String = {
@@ -77,12 +95,11 @@ sealed abstract class FlowIdFilter(
   }
 }
 
-sealed trait FlowIdBehavior
-case object Strict extends FlowIdBehavior
-case object Create extends FlowIdBehavior
+final class CreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with CreateFlowIdBehavior with NoTraceBehavior
+final class StrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with StrictFlowIdBehavior with NoTraceBehavior
 
-final class CreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter(Create, true)
-final class StrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter(Strict, true)
+final class MdcCreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with CreateFlowIdBehavior with MdcTraceBehavior
+final class MdcStrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with StrictFlowIdBehavior with MdcTraceBehavior
 
 object FlowIdFilter {
   val FlowIdHeader: String = "X-Flow-ID"

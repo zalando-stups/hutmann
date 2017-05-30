@@ -62,7 +62,7 @@ class FlowIdFilterTest3 extends UnitSpec with OneAppPerSuite {
 
   FakeApplication
 
-  "A flow id filter with behaviour=Create and copyToResult=true" should "create a flow id and copy it to the result when no flow id has been given" in {
+  "A flow id filter with behaviour=Create " should "create a flow id and copy it to the result when no flow id has been given" in {
     val filter = new CreateFlowIdFilter
 
     val result = filter.apply(nextFilter)(requestWithoutFlowId).futureValue
@@ -93,7 +93,7 @@ class FlowIdFilterTest3 extends UnitSpec with OneAppPerSuite {
     }
   }
 
-  "A flow id filter with behaviour=Strict and copyToResult=true" should "not accept a request without a flow id, and the result should not have a flow id" in {
+  "A flow id filter with behaviour=Strict" should "not accept a request without a flow id, and the result should not have a flow id" in {
     val filter = new StrictFlowIdFilter
 
     val result = filter.apply(nextFilter)(requestWithoutFlowId).futureValue
