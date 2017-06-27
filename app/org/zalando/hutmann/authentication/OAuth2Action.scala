@@ -31,8 +31,9 @@ class OAuth2Action(
   val filter:         User => Future[Boolean] = { user: User => Future.successful(true) },
   val autoReject:     Boolean                 = true,
   val requestTimeout: Duration                = 1.seconds
-)(implicit config: Config, ec: ExecutionContext, ws: WSClient, materializer: Materializer)
-    extends ActionBuilder[UserRequest] {
+)(implicit config: Config, val executionContext: ExecutionContext, ws: WSClient, materializer: Materializer,
+  val parser: BodyParser[AnyContent])
+    extends ActionBuilder[UserRequest, AnyContent] {
 
   val url = config.getString("org.zalando.hutmann.authentication.oauth2.tokenInfoUrl")
   val query = config.getString("org.zalando.hutmann.authentication.oauth2.tokenQueryParam")
@@ -44,8 +45,8 @@ class OAuth2Action(
 
   def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
     val request: WSRequest = ws.url(url)
-      .withQueryString(query -> token)
-      .withHeaders(HeaderNames.ACCEPT -> MimeTypes.JSON)
+      .withQueryStringParameters(query -> token)
+      .withHttpHeaders(HeaderNames.ACCEPT -> MimeTypes.JSON)
       .withRequestTimeout(requestTimeout)
     // Todo Only allow communication via HTTPS, check certificates (e.g. only specific root CA allowed)
     request.get().map(resp => {
@@ -236,20 +237,20 @@ class OAuth2Action(
 object OAuth2Action {
   def withUserFilter(
     filter: User => Boolean
-  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer): OAuth2Action =
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer, parser: BodyParser[AnyContent]): OAuth2Action =
     apply({ user: User => Future.successful(filter(user)) })
 
   def apply(
     filter: User => Future[Boolean] = { user: User => Future.successful(true) }
-  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer): OAuth2Action =
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer, parser: BodyParser[AnyContent]): OAuth2Action =
     apply(filter, autoReject = true, 1.second)
 
   def apply(
     filter:         User => Future[Boolean],
     autoReject:     Boolean,
     requestTimeout: Duration
-  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer): OAuth2Action =
-    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec, ws, materializer)
+  )(implicit ec: ExecutionContext, ws: WSClient, configuration: Configuration, materializer: Materializer, parser: BodyParser[AnyContent]): OAuth2Action =
+    new OAuth2Action(filter, autoReject, requestTimeout)(configuration.underlying, ec, ws, materializer, parser)
 }
 
 /** Holds the regular expression patterns that are used for reading the tokens from headers and query parameters. Extracted here due to performance reasons.*/

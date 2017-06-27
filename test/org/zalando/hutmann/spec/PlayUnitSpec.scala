@@ -17,8 +17,8 @@ trait PlayUnitSpec extends PlaySpec with ScalaFutures with WsScalaTestClient {
     val callbackURL = s"http://${myPublicAddress()}/callback"
     whenReady(
       wsUrl(testPaymentGatewayURL)
-        .withQueryString("callbackURL" -> callbackURL)
-        .withHeaders(HeaderNames.ACCEPT -> MimeTypes.TEXT)
+        .withQueryStringParameters("callbackURL" -> callbackURL)
+        .withHttpHeaders(HeaderNames.ACCEPT -> MimeTypes.TEXT)
         .get(),
       Interval(Span(10, Seconds))
     ) { result =>

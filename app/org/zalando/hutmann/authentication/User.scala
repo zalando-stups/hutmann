@@ -18,7 +18,7 @@ object User {
       json.validate[IntermediateUser](IntermediateApp2AppUser.basicReads) match {
         case JsSuccess(intermediate, jsPath) =>
           val scopeMap: Map[String, Option[String]] =
-            (for (scopeElement <- intermediate.scope) yield {
+            (for { scopeElement <- intermediate.scope } yield {
               (scopeElement, (json \ scopeElement).validate[String].asOpt)
             }).toMap
 

@@ -4,18 +4,19 @@ name := """hutmann"""
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
 libraryDependencies ++= Seq(
-  json % "provided",
+  "com.typesafe.play" %% "play-json" % "2.6.0" % "provided",
   ws % "provided",
+  guice % "provided",
   "com.lihaoyi" %% "sourcecode" % "0.1.1"
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.0.1",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0",
-  "org.scalacheck" %% "scalacheck" % "1.13.4"
+  "org.scalatest" %% "scalatest" % "3.0.3",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.0.0",
+  "org.scalacheck" %% "scalacheck" % "1.13.5"
 ) map (_ % "test")
 
 maintainer := "team-kohle@zalando.de"

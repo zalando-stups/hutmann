@@ -1,24 +1,27 @@
 package org.zalando.hutmann.authentication
 
-import java.util.{ Base64, UUID }
+import java.util.{Base64, UUID}
 
 import akka.stream.Materializer
 import com.typesafe.config.ConfigFactory
-import org.scalacheck.{ Arbitrary, Gen, Shrink }
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatestplus.play.OneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.zalando.hutmann.logging.Context
 import org.zalando.hutmann.spec.UnitSpec
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{ BodyParsers, Results }
-import play.api.test.{ FakeRequest, WsTestClient }
+import play.api.mvc.{PlayBodyParsers, _}
+import play.api.test.{FakeRequest, WsTestClient}
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
-class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with OneAppPerSuite with WsTestClient with Results {
+class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with GuiceOneAppPerSuite with WsTestClient with Results {
+
   implicit lazy val materializer: Materializer = app.materializer
+  implicit lazy val playBodyParsers = app.injector.instanceOf[PlayBodyParsers]
+  implicit lazy val defaultBodyParser = playBodyParsers.defaultBodyParser
   withClient {
     wsClient =>
 
@@ -34,12 +37,12 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
         def oauth2 = new OAuth2Action()(ConfigFactory.parseString(
           "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-        ), implicitly[ExecutionContext], wsClient, materializer)
+        ), implicitly[ExecutionContext], wsClient, materializer, defaultBodyParser)
 
         def oauth2withMockedService(user: Either[AuthorizationProblem, User] = Right(testUser.arbitrary.sample.get), filter: User => Future[Boolean] = { user => Future.successful(true) }) =
           new OAuth2Action(filter)(ConfigFactory.parseString(
             "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-          ), implicitly[ExecutionContext], wsClient, materializer) {
+          ), implicitly[ExecutionContext], wsClient, materializer, defaultBodyParser) {
             override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
               Future.successful(user)
             }
@@ -48,7 +51,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
         def oauth2withMockedServiceForEssentialAction(user: Either[AuthorizationProblem, User], accessToken: String, filter: User => Future[Boolean] = { user => Future.successful(true) }) =
           new OAuth2Action(filter)(ConfigFactory.parseString(
             "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-          ), implicitly[ExecutionContext], wsClient, materializer) {
+          ), implicitly[ExecutionContext], wsClient, materializer, defaultBodyParser) {
             override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
               if (token == accessToken) Future.successful(user) else Future.successful(Left(NoAuthorization))
             }
@@ -121,7 +124,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
 
       "OAuth2.authenticate" should "retry cases where we get a gateway timeout from the oauth service" in new OAuth2Action()(ConfigFactory.parseString(
         "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
-      ), implicitly[ExecutionContext], wsClient, materializer) {
+      ), implicitly[ExecutionContext], wsClient, materializer, defaultBodyParser) {
         @volatile var callCount = 0
 
         override def validateToken(token: String)(implicit context: Context): Future[Either[OAuth2Error, User]] = {
@@ -152,7 +155,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           implicit val writable = helper.multiPartFormDataWritable(fakeRequest)
 
           val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
-            async(BodyParsers.parse.multipartFormData(helper.handleFilePart)){ request =>
+            async(playBodyParsers.multipartFormData(helper.handleFilePart)){ request =>
               request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
                 case FilePart(_, _, _, result) =>
                   Future.successful(Ok(result.toString))
@@ -176,7 +179,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           implicit val writable = helper.multiPartFormDataWritable(fakeRequest)
 
           val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
-            essentialAction(BodyParsers.parse.multipartFormData(helper.handleFilePart)){ request =>
+            essentialAction(playBodyParsers.multipartFormData(helper.handleFilePart)){ request =>
               request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
                 case FilePart(_, _, _, result) =>
                   Future.successful(Ok(result.toString))
@@ -200,7 +203,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           implicit val writable = helper.multiPartFormDataWritable(fakeRequest)
 
           val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
-            essentialAction(BodyParsers.parse.multipartFormData(helper.handleFilePart)) { request =>
+            essentialAction(playBodyParsers.multipartFormData(helper.handleFilePart)) { request =>
               request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
                 case FilePart(_, _, _, result) =>
                   Future.successful(Ok(result.toString))

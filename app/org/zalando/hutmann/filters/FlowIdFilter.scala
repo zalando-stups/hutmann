@@ -1,10 +1,9 @@
 package org.zalando.hutmann.filters
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.implicitConversions
 import play.api.mvc.{ Filter, RequestHeader, Result }
 import play.api.mvc.Results.BadRequest
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import java.util.{ Base64, UUID }
 
 import akka.stream.Materializer
@@ -12,7 +11,7 @@ import com.google.inject.Inject
 import FlowIdFilter.FlowIdHeader
 import org.zalando.hutmann.logging.Context
 
-sealed abstract class FlowIdFilter(implicit val mat: Materializer) extends Filter {
+sealed abstract class FlowIdFilter(implicit val mat: Materializer, implicit val ec: ExecutionContext) extends Filter {
   self: FlowIdBehavior with TraceBehavior =>
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
@@ -21,7 +20,7 @@ sealed abstract class FlowIdFilter(implicit val mat: Materializer) extends Filte
       case None =>
         Future.successful(BadRequest("Missing flow id header"))
       case Some(flowId) =>
-        val headers = rh.copy(headers = rh.headers.add(FlowIdHeader -> flowId))
+        val headers = rh.withHeaders(rh.headers.add(FlowIdHeader -> flowId))
         trace(headers) {
           nextFilter(headers).map(_.withHeaders(FlowIdHeader -> flowId))
         }
@@ -95,11 +94,19 @@ sealed trait CreateFlowIdBehavior extends FlowIdBehavior {
   }
 }
 
-final class CreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with CreateFlowIdBehavior with NoTraceBehavior
-final class StrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with StrictFlowIdBehavior with NoTraceBehavior
+final class CreateFlowIdFilter @Inject() (implicit
+  mat: Materializer,
+                                          override implicit val ec: ExecutionContext) extends FlowIdFilter with CreateFlowIdBehavior with NoTraceBehavior
+final class StrictFlowIdFilter @Inject() (implicit
+  mat: Materializer,
+                                          override implicit val ec: ExecutionContext) extends FlowIdFilter with StrictFlowIdBehavior with NoTraceBehavior
 
-final class MdcCreateFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with CreateFlowIdBehavior with MdcTraceBehavior
-final class MdcStrictFlowIdFilter @Inject() (implicit mat: Materializer) extends FlowIdFilter with StrictFlowIdBehavior with MdcTraceBehavior
+final class MdcCreateFlowIdFilter @Inject() (implicit
+  mat: Materializer,
+                                             override implicit val ec: ExecutionContext) extends FlowIdFilter with CreateFlowIdBehavior with MdcTraceBehavior
+final class MdcStrictFlowIdFilter @Inject() (implicit
+  mat: Materializer,
+                                             override implicit val ec: ExecutionContext) extends FlowIdFilter with StrictFlowIdBehavior with MdcTraceBehavior
 
 object FlowIdFilter {
   val FlowIdHeader: String = "X-Flow-ID"
