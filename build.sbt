@@ -4,8 +4,8 @@ name := """hutmann"""
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala, TutPlugin)
 
-scalaVersion := "2.11.11"
-crossScalaVersions := Seq("2.12.2", "2.11.11")
+scalaVersion := "2.12.2"
+crossScalaVersions := Seq("2.11.11", "2.12.2")
 scapegoatVersion := "1.3.1"
 
 libraryDependencies ++= Seq(

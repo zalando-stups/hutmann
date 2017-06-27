@@ -1,21 +1,21 @@
 package org.zalando.hutmann.authentication
 
-import java.util.{Base64, UUID}
+import java.util.{ Base64, UUID }
 
 import akka.stream.Materializer
 import com.typesafe.config.ConfigFactory
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{ Arbitrary, Gen }
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.zalando.hutmann.logging.Context
 import org.zalando.hutmann.spec.UnitSpec
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{PlayBodyParsers, _}
-import play.api.test.{FakeRequest, WsTestClient}
+import play.api.mvc.{ PlayBodyParsers, _ }
+import play.api.test.{ FakeRequest, WsTestClient }
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with GuiceOneAppPerSuite with WsTestClient with Results {
 

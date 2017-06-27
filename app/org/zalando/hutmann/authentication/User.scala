@@ -3,7 +3,7 @@ package org.zalando.hutmann.authentication
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-final case class User(
+case class User(
   accessToken: String,
   scope:       Map[String, Option[String]],
   realm:       String,
@@ -42,7 +42,7 @@ object User {
 /**
   * Intermediate user that will only be used internally. Do not use this one directly, use App2AppUser instead.
   */
-private final case class IntermediateUser(
+private case class IntermediateUser(
   accessToken: String,
   scope:       Set[String],
   realm:       String,

@@ -5,16 +5,16 @@ import javax.inject.Inject
 import akka.stream.Materializer
 import org.zalando.hutmann.spec.{ PlayUnitSpec, UnitSpec }
 import play.api.Application
-import play.api.http.{DefaultHttpFilters, HttpFilters, HttpVerbs, Status}
+import play.api.http.{ DefaultHttpFilters, HttpFilters, HttpVerbs, Status }
 import play.api.inject._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test._
 import FlowIdFilter.FlowIdHeader
-import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerSuite}
+import org.scalatestplus.play.guice.{ GuiceOneAppPerSuite, GuiceOneServerPerSuite }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class FlowIdFilterTest extends PlayUnitSpec with GuiceOneServerPerSuite with TestApp {
   implicit override lazy val app = createApp(classOf[StrictFilters])

@@ -5,8 +5,8 @@ import play.api.libs.json.{ JsError, JsSuccess, JsValue }
 
 trait OAuth2Response
 
-final case class OAuth2Success[T <: OAuth2User](user: T) extends OAuth2Response
-final case class OAuth2Failure[T <: OAuth2Error](failure: T) extends OAuth2Response
+case class OAuth2Success[T <: OAuth2User](user: T) extends OAuth2Response
+case class OAuth2Failure[T <: OAuth2Error](failure: T) extends OAuth2Response
 
 object OAuth2Response {
   implicit val userFormat = User.app2AppUserReader
