@@ -1,7 +1,6 @@
 package org.zalando.hutmann.filters
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.language.implicitConversions
 import play.api.mvc.{ Filter, RequestHeader, Result }
 import play.api.mvc.Results.BadRequest
 import java.util.{ Base64, UUID }

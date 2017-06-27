@@ -51,7 +51,7 @@ coverageMinimum := 50
 //do not warn in test cases when we use reflective calls - but do so in production!
 scalacOptions in Test += "-language:reflectiveCalls"
 
-scapegoatVersion := "1.2.0"
+scapegoatVersion := "1.3.1"
 scapegoatDisabledInspections := Seq(
   "ObjectNames",
   "ClassNames"

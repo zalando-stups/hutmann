@@ -16,7 +16,6 @@ import play.api.mvc._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 import scala.util.{ Failure, Success, Try }
