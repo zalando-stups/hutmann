@@ -2,7 +2,7 @@
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.6.0")
 
 //tut lib
-addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.4.2")
+addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.5.2")
 
 // web plugins
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "0.8.0")
