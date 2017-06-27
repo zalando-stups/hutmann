@@ -39,7 +39,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
         ), implicitly[ExecutionContext], wsClient, materializer, defaultBodyParser)
 
-        def oauth2withMockedService(user: Either[AuthorizationProblem, User] = Right(testUser.arbitrary.sample.get), filter: User => Future[Boolean] = { user => Future.successful(true) }) =
+        def oauth2withMockedService(user: Either[AuthorizationProblem, User] = Right(testUser.arbitrary.sample.get), filter: User => Future[Boolean] = { _ => Future.successful(true) }) =
           new OAuth2Action(filter)(ConfigFactory.parseString(
             "org.zalando.hutmann.authentication.oauth2: {\ntokenInfoUrl: \"https://info.services.auth.zalando.com/oauth2/tokeninfo\"\ntokenQueryParam: \"access_token\"}"
           ), implicitly[ExecutionContext], wsClient, materializer, defaultBodyParser) {

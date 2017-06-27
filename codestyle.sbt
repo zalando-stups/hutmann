@@ -40,7 +40,7 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(IndentWithTabs, false)
   .setPreference(IndentSpaces, 2)
   .setPreference(MultilineScaladocCommentsStartOnFirstLine, false)
-  .setPreference(PreserveDanglingCloseParenthesis, true)
+  .setPreference(DanglingCloseParenthesis, Force)
 
 coverageEnabled in Test:= true
 coverageExcludedPackages := "<empty>;router.Routes;router.RoutesPrefix;controllers.Reverse*;controllers.javascript.Reverse*"
@@ -57,5 +57,5 @@ scapegoatDisabledInspections := Seq(
   "ClassNames"
 )
 scapegoatIgnoredFiles := Seq(".*/routes/main/.*")
-publish <<= publish dependsOn scapegoat
-publishLocal <<= publishLocal dependsOn scapegoat
+publish := (publish dependsOn scapegoat).value
+publishLocal := (publishLocal dependsOn scapegoat).value
