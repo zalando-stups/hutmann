@@ -17,11 +17,9 @@ scalastyleConfigUrl := Option(url("https://s3.eu-central-1.amazonaws.com/kohle-d
 scalastyleFailOnError := true
 
 // Create a default Scala style task to run with tests
-lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
+lazy val compileScalastyle = org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Compile).toTask("")
 
-compileScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Compile).toTask("").value
-
-(compileInputs in(Compile, compile)) <<= (compileInputs in(Compile, compile)) dependsOn compileScalastyle
+(compileInputs in(Compile, compile)) := ((compileInputs in(Compile, compile)) dependsOn compileScalastyle).value
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
