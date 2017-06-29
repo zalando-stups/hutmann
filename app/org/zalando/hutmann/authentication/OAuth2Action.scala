@@ -175,7 +175,7 @@ class OAuth2Action(
       Accumulator.flatten[ByteString, Result] {
         authenticate(requestHeader).map { user =>
 
-          lazy val accumulator = Action.async[A](bodyParser) { request =>
+          lazy val accumulator = DefaultActionBuilder(parser).async(bodyParser) { request =>
             val userRequest = new UserRequest[A](user, request)(request)
             block(userRequest)
           }(requestHeader)
