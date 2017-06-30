@@ -4,7 +4,7 @@
 
 # Hutmann - a Scala/Play library for OAuth2 authentication
 
-This library provides support for using OAuth2 for authentication, mainly for backends, that use the Play framework (2.4). Additionally, it brings
+This library provides support for using OAuth2 for authentication, mainly for backends, that use the Play framework. Additionally, it brings
 some support for logging and flow ids that can be used to follow requests through several microservices. It should
 not require much setup before using it - see `Configuration` for more details.
 
@@ -78,11 +78,11 @@ tell something about the other frameworks etc
 
 ## Perquisites and dependencies
 
-The library currently only works with Play 2.4. It depends on its JSON and WS libraries, which your project must bring.
+This library depends on Play's JSON and WS libraries, which your project must bring.
 
 ## Getting it
 
-Versioning follows the Play version number it works with. 2.4.x therefore is a version that works with Play 2.4, 2.5.x (if any) works with Play 2.5.
+Versioning follows the Play version number it works with. 2.6.x therefore is a version that works with Play 2.6 and so on.
 
 ```scala
 libraryDependencies += "org.zalando" %% "hutmann" % "2.6.0"
@@ -95,8 +95,8 @@ keys may be interesting though:
 
 ```json
 org.zalando.hutmann.authentication.oauth2: {
-  tokenInfoUrl: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
-  tokenQueryParam: "access_token"
+  "tokenInfoUrl": "https://info.services.auth.zalando.com/oauth2/tokeninfo",
+  "tokenQueryParam": "access_token"
 }
 ```
 
@@ -270,3 +270,11 @@ MyController.createSession(FakeRequest().withJsonBody(Json.obj()))
 
 will automatically log the passed time since the beginning of the flow (creation of the context), the flow id, and the source code line where the
 log event was created.
+
+## Contributions
+
+We welcome contributions. See [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for details.
+
+## License
+
+This code is released under the MIT license.
