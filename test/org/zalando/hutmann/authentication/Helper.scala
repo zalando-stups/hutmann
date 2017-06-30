@@ -8,25 +8,26 @@ import akka.util.ByteString
 import org.apache.http.entity.ContentType
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import play.api.http.{ ContentTypeOf, Writeable }
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.{ SingletonTemporaryFileCreator, TemporaryFile }
 import play.api.libs.streams.Accumulator
 import play.api.mvc.MultipartFormData
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.test.FakeRequest
 import play.core.parsers.Multipart.{ FileInfo, _ }
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class Helper(var mockDb: List[Int] = List()) {
+  val temporaryFileCreator = SingletonTemporaryFileCreator
+  val temporaryFile = temporaryFileCreator.create(prefix = "test_file")
 
-  val temporaryFile = TemporaryFile.apply(prefix = "test_file")
-
-  val printWriter = new PrintWriter(temporaryFile.file.getAbsolutePath)
+  val printWriter = new PrintWriter(temporaryFile.path.toFile.getAbsolutePath)
   (1 to 10).foreach(i => printWriter.write(s"$i\n"))
   printWriter.close()
 
   val multipartFormData = MultipartFormData[TemporaryFile](
     dataParts = Map(),
-    files = Seq(FilePart[TemporaryFile]("file", temporaryFile.file.getName, None, temporaryFile)),
+    files = Seq(FilePart[TemporaryFile]("file", temporaryFile.path.toFile.getName, None, temporaryFile)),
     badParts = Nil
   )
 
@@ -56,7 +57,7 @@ class Helper(var mockDb: List[Int] = List()) {
     // ContentType part is necessary here because it gets parsed as a DataPart otherwise.
     request.body.files.foreach {
       case f =>
-        builder.addBinaryBody("file", f.ref.file, ContentType.create(f.contentType.getOrElse("multipart/form-data"), "UTF-8"), f.filename)
+        builder.addBinaryBody("file", f.ref.path.toFile, ContentType.create(f.contentType.getOrElse("multipart/form-data"), "UTF-8"), f.filename)
     }
 
     val entity = builder.build()

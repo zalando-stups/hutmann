@@ -1,10 +1,8 @@
 package org.zalando.hutmann.helpers
 
-import akka.actor.{ ActorSystem, Scheduler }
+import akka.actor.ActorSystem
 import akka.pattern.CircuitBreaker
 import play.api.Configuration
-import play.api.Play._
-import play.api.libs.concurrent.Akka
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.language.postfixOps
@@ -17,12 +15,12 @@ object CircuitBreakerFactory {
   private val baseConfigKey = "org.zalando.hutmann.circuitBreaker"
 
   private def configAsDuration(breaker: String, key: String)(implicit configuration: Configuration): Option[FiniteDuration] = configuration
-    .getMilliseconds(s"$baseConfigKey.$breaker.$key")
-    .orElse(configuration.getMilliseconds(s"$baseConfigKey.generic.$key"))
-    .map(_.millis)
+    .getOptional[FiniteDuration](s"$baseConfigKey.$breaker.$key")
+    .orElse(configuration.getOptional[FiniteDuration](s"$baseConfigKey.generic.$key"))
+
   private def configAsInt(breaker: String, key: String)(implicit configuration: Configuration): Option[Int] = configuration
-    .getInt(s"$baseConfigKey.$breaker.$key")
-    .orElse(configuration.getInt(s"$baseConfigKey.generic.$key"))
+    .getOptional[Int](s"$baseConfigKey.$breaker.$key")
+    .orElse(configuration.getOptional[Int](s"$baseConfigKey.generic.$key"))
 
   /**
     * @param breaker The name of the circuit-breaker in the config, if any (reads "generic" if the given one is undefined)

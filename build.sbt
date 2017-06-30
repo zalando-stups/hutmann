@@ -2,20 +2,22 @@ organization := "org.zalando"
 
 name := """hutmann"""
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+lazy val root = (project in file(".")).enablePlugins(PlayScala, TutPlugin)
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.2"
+crossScalaVersions := Seq("2.11.11", "2.12.2")
 
 libraryDependencies ++= Seq(
-  json % "provided",
+  "com.typesafe.play" %% "play-json" % "2.6.0" % "provided",
   ws % "provided",
-  "com.lihaoyi" %% "sourcecode" % "0.1.1"
+  guice % "provided",
+  "com.lihaoyi" %% "sourcecode" % "0.1.3"
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.0.1",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0",
-  "org.scalacheck" %% "scalacheck" % "1.13.4"
+  "org.scalatest" %% "scalatest" % "3.0.3",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.0.0",
+  "org.scalacheck" %% "scalacheck" % "1.13.5"
 ) map (_ % "test")
 
 maintainer := "team-kohle@zalando.de"
@@ -51,6 +53,5 @@ pomExtra := (
 homepage := Some(url("https://github.com/zalando-incubator/hutmann"))
 
 //settings to compile readme
-tutSettings
 tutSourceDirectory := baseDirectory.value / "tut"
 tutTargetDirectory := baseDirectory.value
