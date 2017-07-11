@@ -8,7 +8,7 @@ This library provides support for using OAuth2 for authentication, mainly for ba
 some support for logging and flow ids that can be used to follow requests through several microservices. It should
 not require much setup before using it - see `Configuration` for more details.
 
-The name stems from the german mining term [Hutmann](https://de.wikipedia.org/wiki/Hutmann), who was responsible to make sure that no
+The name stems from the German mining term [Hutmann](https://de.wikipedia.org/wiki/Hutmann), who was responsible to make sure that no
 unauthorized person drove into the pit.
 
 ## Features
@@ -43,7 +43,7 @@ implicit val ws: WSClient = null
 implicit val config: Configuration = null
 import scala.concurrent.ExecutionContext.Implicits.global
 
-  def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]) { 
+  def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]) {
     Ok("<3")
   }
 ```
@@ -56,23 +56,19 @@ side effects of not using EssentialAction is explained in detail in this [issue]
  import play.api.libs.ws.WSClient
  import play.api.Configuration
  import scala.util.Future
- 
+
  //these come from the application normally
  implicit val ws: WSClient = null
  implicit val config: Configuration = null
  import scala.concurrent.ExecutionContext.Implicits.global
- 
- def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]).essentialAction(parse.default) { 
+
+ def heartbeat = OAuth2Action()(implicitly[ExecutionContext], implicitly[WSClient], implicitly[Configuration]).essentialAction(parse.default) {
      Future.successful(Ok("<3"))
  }
 ```
 
 and it automatically makes sure that requests to that route have a valid authentication token - although most probably,
 you won't make your heartbeat endpoint secured.
-
-# Related projects / Why this one?
-
-tell something about the other frameworks etc
 
 # Getting started
 
@@ -86,6 +82,12 @@ Versioning follows the Play version number it works with. 2.6.x therefore is a v
 
 ```scala
 libraryDependencies += "org.zalando" %% "hutmann" % "2.6.0"
+```
+
+For Play 2.5 use
+
+```scala
+libraryDependencies += "org.zalando" %% "hutmann" % "2.5.4"
 ```
 
 ## Configuring
