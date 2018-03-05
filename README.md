@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/zalando-incubator/hutmann.svg?branch=master)](https://travis-ci.org/zalando-incubator/hutmann)
-[![Coverage Status](https://coveralls.io/repos/github/zalando-incubator/hutmann/badge.svg?branch=master)](https://coveralls.io/github/hutmann/hutmann?branch=master)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://raw.githubusercontent.com/zalando-incubator/hutmann/master/LICENSE)
+[![Build Status](https://travis-ci.org/zalando-stups/hutmann.svg?branch=master)](https://travis-ci.org/zalando-stups/hutmann)
+[![Coverage Status](https://coveralls.io/repos/github/zalando-stups/hutmann/badge.svg?branch=master)](https://coveralls.io/github/hutmann/hutmann?branch=master)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://raw.githubusercontent.com/zalando-stups/hutmann/master/LICENSE)
 
 # Hutmann - a Scala/Play library for OAuth2 authentication
 
@@ -49,7 +49,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 ```
 
 or use(recommended) [EssentialAction](https://www.playframework.com/documentation/2.5.x/ScalaEssentialAction) to authenticate request first and then proceed with everything else like request body parsing etc.
-side effects of not using EssentialAction is explained in detail in this [issue](https://github.com/zalando-incubator/hutmann/issues/8)
+side effects of not using EssentialAction is explained in detail in this [issue](https://github.com/zalando-stups/hutmann/issues/8)
 
 ```scala
  import scala.concurrent.ExecutionContext
