@@ -33,7 +33,7 @@ class Helper(var mockDb: List[Int] = List()) {
 
   // A custom file part handler, which process the content of files in request body and store it into mockDb as well.
   def handleFilePart: FilePartHandler[Int] = {
-    case FileInfo(partName, filename, contentType) =>
+    case FileInfo(partName, filename, contentType, _) =>
       val byteStreamToLineFlow: Flow[ByteString, String, NotUsed] = Flow[ByteString].
         via(Framing.delimiter(ByteString("\n"), 1000, allowTruncation = true)).map(_.utf8String)
       val sink = byteStreamToLineFlow.toMat(Sink.fold(List[Int]()){ (r, c) =>

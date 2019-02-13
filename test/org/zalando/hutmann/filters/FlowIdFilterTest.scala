@@ -121,7 +121,7 @@ trait TestApp {
 
   def createApp(filter: Class[_ <: HttpFilters]): Application =
     new GuiceApplicationBuilder()
-      .configure(Map("ehcacheplugin" -> "disabled"))
+      .configure(Map("ehcacheplugin" -> "disabled", "play.allowGlobalApplication" -> "true"))
       .routes(
         {
           case (HttpVerbs.GET, "/flowid") => Action { request =>

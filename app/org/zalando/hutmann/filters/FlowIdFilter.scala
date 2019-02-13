@@ -94,18 +94,22 @@ sealed trait CreateFlowIdBehavior extends FlowIdBehavior {
 }
 
 final class CreateFlowIdFilter @Inject() (implicit
-  mat: Materializer,
-                                          override implicit val ec: ExecutionContext) extends FlowIdFilter with CreateFlowIdBehavior with NoTraceBehavior
+    mat: Materializer,
+                                          override implicit val ec: ExecutionContext
+) extends FlowIdFilter with CreateFlowIdBehavior with NoTraceBehavior
 final class StrictFlowIdFilter @Inject() (implicit
-  mat: Materializer,
-                                          override implicit val ec: ExecutionContext) extends FlowIdFilter with StrictFlowIdBehavior with NoTraceBehavior
+    mat: Materializer,
+                                          override implicit val ec: ExecutionContext
+) extends FlowIdFilter with StrictFlowIdBehavior with NoTraceBehavior
 
 final class MdcCreateFlowIdFilter @Inject() (implicit
-  mat: Materializer,
-                                             override implicit val ec: ExecutionContext) extends FlowIdFilter with CreateFlowIdBehavior with MdcTraceBehavior
+    mat: Materializer,
+                                             override implicit val ec: ExecutionContext
+) extends FlowIdFilter with CreateFlowIdBehavior with MdcTraceBehavior
 final class MdcStrictFlowIdFilter @Inject() (implicit
-  mat: Materializer,
-                                             override implicit val ec: ExecutionContext) extends FlowIdFilter with StrictFlowIdBehavior with MdcTraceBehavior
+    mat: Materializer,
+                                             override implicit val ec: ExecutionContext
+) extends FlowIdFilter with StrictFlowIdBehavior with MdcTraceBehavior
 
 object FlowIdFilter {
   val FlowIdHeader: String = "X-Flow-ID"

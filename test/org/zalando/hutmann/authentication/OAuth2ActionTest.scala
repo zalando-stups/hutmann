@@ -157,7 +157,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
             async(playBodyParsers.multipartFormData(helper.handleFilePart)){ request =>
               request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
-                case FilePart(_, _, _, result) =>
+                case FilePart(_, _, _, result, _, _) =>
                   Future.successful(Ok(result.toString))
               }
             }
@@ -181,7 +181,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
             essentialAction(playBodyParsers.multipartFormData(helper.handleFilePart)){ request =>
               request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
-                case FilePart(_, _, _, result) =>
+                case FilePart(_, _, _, result, _, _) =>
                   Future.successful(Ok(result.toString))
               }
             }
@@ -205,7 +205,7 @@ class OAuth2ActionTest extends UnitSpec with GeneratorDrivenPropertyChecks with 
           val essentialAction = oauth2withMockedServiceForEssentialAction(Right(testUser), testUser.accessToken).
             essentialAction(playBodyParsers.multipartFormData(helper.handleFilePart)) { request =>
               request.body.file("file").fold(Future.successful(BadRequest("no file found"))){
-                case FilePart(_, _, _, result) =>
+                case FilePart(_, _, _, result, _, _) =>
                   Future.successful(Ok(result.toString))
               }
             }
