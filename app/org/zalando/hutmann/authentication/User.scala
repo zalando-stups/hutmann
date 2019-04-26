@@ -4,12 +4,12 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
 final case class User(
-  accessToken: String,
-  scope:       Map[String, Option[String]],
-  realm:       String,
-  tokenType:   String,
-  expiresIn:   Int,
-  uid:         Option[String]
+    accessToken: String,
+    scope:       Map[String, Option[String]],
+    realm:       String,
+    tokenType:   String,
+    expiresIn:   Int,
+    uid:         Option[String]
 ) extends OAuth2User
 
 object User {
@@ -43,11 +43,11 @@ object User {
   * Intermediate user that will only be used internally. Do not use this one directly, use App2AppUser instead.
   */
 private final case class IntermediateUser(
-  accessToken: String,
-  scope:       Set[String],
-  realm:       String,
-  tokenType:   String,
-  expiresIn:   Int
+    accessToken: String,
+    scope:       Set[String],
+    realm:       String,
+    tokenType:   String,
+    expiresIn:   Int
 )
 private object IntermediateApp2AppUser {
   val basicReads = (

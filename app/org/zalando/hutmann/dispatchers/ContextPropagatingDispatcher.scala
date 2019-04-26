@@ -53,7 +53,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   * Configurator for a context propagating dispatcher.
   */
 class ContextPropagatingDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+  extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val instance = new ContextPropagatingDispatcher(
     this,
@@ -73,12 +73,12 @@ class ContextPropagatingDispatcherConfigurator(config: Config, prerequisites: Di
   * This dispatcher propagates the current request context if it's set when it's executed.
   */
 class ContextPropagatingDispatcher(
-  _configurator:                  MessageDispatcherConfigurator,
-  id:                             String,
-  throughput:                     Int,
-  throughputDeadlineTime:         Duration,
-  executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  shutdownTimeout:                FiniteDuration
+    _configurator:                  MessageDispatcherConfigurator,
+    id:                             String,
+    throughput:                     Int,
+    throughputDeadlineTime:         Duration,
+    executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
+    shutdownTimeout:                FiniteDuration
 ) extends Dispatcher(
   _configurator, id, throughput, throughputDeadlineTime, executorServiceFactoryProvider, shutdownTimeout
 ) { self =>

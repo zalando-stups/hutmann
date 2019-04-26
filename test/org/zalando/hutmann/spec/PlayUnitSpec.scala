@@ -10,7 +10,7 @@ import play.api.libs.ws.{ WSClient, WSResponse }
 
 trait PlayUnitSpec extends PlaySpec with ScalaFutures with WsScalaTestClient {
   def myPublicAddress(): String
-  implicit val portNumber: PortNumber
+  implicit def portNumber: PortNumber
 
   def callWs(testPaymentGatewayURL: String)(implicit app: Application): WSResponse = {
     implicit val wSClient = app.injector.instanceOf[WSClient]

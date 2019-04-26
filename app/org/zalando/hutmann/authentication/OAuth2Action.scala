@@ -27,12 +27,12 @@ import scala.util.{ Failure, Success, Try }
   * @param config The config section containing the OAuth server information
   */
 class OAuth2Action(
-  val filter:         User => Future[Boolean] = { user: User => Future.successful(true) },
-  val autoReject:     Boolean                 = true,
-  val requestTimeout: Duration                = 1.seconds
+    val filter:         User => Future[Boolean] = { user: User => Future.successful(true) },
+    val autoReject:     Boolean                 = true,
+    val requestTimeout: Duration                = 1.seconds
 )(implicit config: Config, val executionContext: ExecutionContext, ws: WSClient, materializer: Materializer,
   val parser: BodyParser[AnyContent])
-    extends ActionBuilder[UserRequest, AnyContent] {
+  extends ActionBuilder[UserRequest, AnyContent] {
 
   val url = config.getString("org.zalando.hutmann.authentication.oauth2.tokenInfoUrl")
   val query = config.getString("org.zalando.hutmann.authentication.oauth2.tokenQueryParam")
